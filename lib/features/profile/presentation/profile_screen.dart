@@ -6,6 +6,7 @@ import '../../../shared/widgets/retro_top_bar.dart';
 import '../../../theme/ember_retro_theme.dart';
 import '../../auth/domain/app_user.dart';
 import '../../auth/providers/auth_providers.dart';
+import '../providers/app_version_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -154,6 +155,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 18),
+                const _AppVersion(),
               ],
             ),
           );
@@ -337,6 +340,23 @@ class _PlayerCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Rodapé com a versão instalada do app.
+class _AppVersion extends ConsumerWidget {
+  const _AppVersion();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final version = ref.watch(appVersionProvider).valueOrNull;
+    if (version == null) return const SizedBox.shrink();
+
+    return Text(
+      'LITTLE EMBER · V$version',
+      textAlign: TextAlign.center,
+      style: EmberText.mono(10, color: RetroTokens.of(context).textSecondary),
     );
   }
 }
