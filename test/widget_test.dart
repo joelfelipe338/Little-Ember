@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:little_ember/app.dart';
+import 'package:chamma/app.dart';
 
 void main() {
   testWidgets('App renderiza sem erros', (WidgetTester tester) async {
     await tester.pumpWidget(
-      const ProviderScope(child: LittleEmberApp()),
+      const ProviderScope(child: ChammaApp()),
     );
-    expect(find.text('Little Ember'), findsOneWidget);
+    expect(find.text('CHAMMA'), findsOneWidget);
   });
 }

@@ -100,6 +100,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Widget _buildSuccess() {
+    final p = RetroPalette.of(context);
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -109,11 +110,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             Container(
               width: 84,
               height: 84,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 color: EmberColors.menta,
                 shape: BoxShape.circle,
-                border: Border.fromBorderSide(BorderSide(color: EmberColors.tinta, width: EmberRetro.borda)),
-                boxShadow: [BoxShadow(color: EmberColors.tinta, offset: Offset(0, 5))],
+                border: p.contornoBorda,
+                boxShadow: [BoxShadow(color: p.contorno, offset: const Offset(0, 5))],
               ),
               child: const Icon(Icons.check_rounded, color: EmberColors.tinta, size: 44),
             ),
@@ -122,7 +123,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             const SizedBox(height: 8),
             Text(
               'Verifique seu email para confirmar a conta e depois faça login.',
-              style: EmberText.body(15, color: EmberColors.textoSecundario),
+              style: EmberText.body(15, color: p.textoSecundario),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 28),
@@ -138,6 +139,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Widget _buildForm() {
+    final p = RetroPalette.of(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(22, 30, 22, 22),
       child: Form(
@@ -149,7 +151,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             const SizedBox(height: 4),
             Text(
               'Leva 30 segundos. Depois é só chamar a galera.',
-              style: EmberText.body(15, color: EmberColors.textoSecundario),
+              style: EmberText.body(15, color: p.textoSecundario),
             ),
             const SizedBox(height: 22),
             const RetroFieldLabel('Nome'),

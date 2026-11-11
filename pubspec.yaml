@@ -1,4 +1,4 @@
-name: little_ember
+name: chamma
 description: "A chama que mantém a amizade acesa."
 publish_to: 'none'
 version: 0.1.0+1
@@ -54,3 +54,4 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/branding/

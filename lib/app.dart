@@ -5,8 +5,8 @@ import 'core/constants.dart';
 import 'core/theme/theme_provider.dart';
 import 'theme/ember_retro_theme.dart';
 
-class LittleEmberApp extends ConsumerWidget {
-  const LittleEmberApp({super.key});
+class ChammaApp extends ConsumerWidget {
+  const ChammaApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

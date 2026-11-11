@@ -83,7 +83,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: EmberColors.brasaTexto),
+            style: TextButton.styleFrom(foregroundColor: RetroPalette.of(context).erroTexto),
             child: const Text('Sair'),
           ),
         ],
@@ -100,18 +100,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final profileAsync = ref.watch(profileProvider);
+    final p = RetroPalette.of(context);
 
     return RetroScaffold(
       top: RetroTopBar(
         left: 'SEU',
         right: 'PERFIL',
-        emblem: const Icon(Icons.person_rounded, size: 24, color: EmberColors.tinta),
+        emblem: const Icon(Icons.person_rounded, size: 24),
         trailing: profileAsync.valueOrNull == null
             ? null
             : RetroButton.icon(
                 onPressed: _isEditing ? () => setState(() => _isEditing = false) : _startEditing,
                 semanticLabel: _isEditing ? 'Cancelar edição' : 'Editar perfil',
-                color: _isEditing ? EmberColors.branco : EmberColors.creme,
+                color: _isEditing ? p.superficie : p.botaoSecundario,
                 icon: Icon(_isEditing ? Icons.close_rounded : Icons.edit_rounded),
               ),
       ),
@@ -143,8 +144,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 RetroButton(
                   onPressed: _handleLogout,
                   shape: RetroButtonShape.pill,
-                  color: EmberColors.branco,
-                  foregroundColor: EmberColors.brasaTexto,
+                  color: p.superficie,
+                  foregroundColor: p.erroTexto,
                   expand: true,
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
@@ -196,7 +197,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           DropdownButtonFormField<String>(
             initialValue: _fusoSelecionado,
             borderRadius: BorderRadius.circular(EmberRetro.raioBotao),
-            dropdownColor: EmberColors.branco,
+            dropdownColor: RetroPalette.of(context).superficie,
             items: _fusos
                 .map((f) => DropdownMenuItem(value: f, child: Text(_fusoLabel(f))))
                 .toList(),
@@ -219,7 +220,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Widget _buildThemeSection() {
     final themeMode = ref.watch(themeModeProvider);
-    final tokens = RetroTokens.of(context);
+    final p = RetroPalette.of(context);
 
     Widget themeBtn(ThemeMode mode, IconData icon, String label) {
       final isActive = themeMode == mode;
@@ -227,8 +228,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         child: RetroButton(
           height: 42,
           padding: const EdgeInsets.symmetric(horizontal: 6),
-          color: isActive ? EmberColors.sol : tokens.cardBg,
-          foregroundColor: isActive ? EmberColors.tinta : tokens.textPrimary,
+          color: isActive ? EmberColors.sol : p.superficie,
+          foregroundColor: isActive ? EmberColors.tinta : p.texto,
           onPressed: () => ref.read(themeModeProvider.notifier).set(mode),
           child: FittedBox(
             fit: BoxFit.scaleDown,
@@ -249,7 +250,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('APARÊNCIA', style: EmberText.mono(10, color: tokens.textSecondary)),
+          Text('APARÊNCIA', style: EmberText.mono(10, color: p.textoSecundario)),
           const SizedBox(height: 10),
           Row(
             children: [
@@ -266,17 +267,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Widget _infoRow(IconData icon, String label, String value) {
+    final p = RetroPalette.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: EmberColors.textoSecundario),
+          Icon(icon, size: 20, color: p.textoSecundario),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label.toUpperCase(), style: EmberText.mono(10, color: EmberColors.textoSecundario)),
+                Text(label.toUpperCase(), style: EmberText.mono(10, color: p.textoSecundario)),
                 const SizedBox(height: 2),
                 Text(value, style: EmberText.body(16, weight: FontWeight.w600)),
               ],
@@ -296,8 +298,9 @@ class _PlayerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = RetroPalette.of(context);
     final initial = profile.nome.isNotEmpty ? profile.nome[0].toUpperCase() : '?';
-    final fallback = Center(child: Text(initial, style: EmberText.display(36)));
+    final fallback = Center(child: Text(initial, style: EmberText.display(36, color: EmberColors.tinta)));
 
     return RetroCard(
       padding: const EdgeInsets.all(12),
@@ -306,11 +309,11 @@ class _PlayerCard extends StatelessWidget {
           Container(
             width: 76,
             height: 76,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: EmberColors.sol,
               shape: BoxShape.circle,
-              border: Border.fromBorderSide(BorderSide(color: EmberColors.tinta, width: EmberRetro.borda)),
-              boxShadow: [BoxShadow(color: EmberColors.tinta, offset: Offset(0, 4))],
+              border: p.contornoBorda,
+              boxShadow: [BoxShadow(color: p.contorno, offset: const Offset(0, 4))],
             ),
             clipBehavior: Clip.antiAlias,
             child: profile.avatarUrl != null
@@ -331,7 +334,7 @@ class _PlayerCard extends StatelessWidget {
                 if (profile.email != null)
                   Text(
                     profile.email!,
-                    style: EmberText.body(13, color: EmberColors.textoSecundario),
+                    style: EmberText.body(13, color: p.textoSecundario),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

@@ -1,16 +1,18 @@
-# little_ember
+# CHAMMA
 
-A new Flutter project.
+A chama que mantém a amizade acesa. App Flutter para marcar rolês em grupo: quem cria manda um link, a galera vota (sem instalar nada) e o app decide.
 
-## Getting Started
+## Stack
 
-This project is a starting point for a Flutter application.
+- Flutter + Riverpod + go_router
+- Supabase (Postgres, Auth, RLS) — migrações em `supabase/migrations/`
+- Web publicada no GitHub Pages (`.github/workflows/deploy-web.yml`)
 
-A few resources to get you started if this is your first Flutter project:
+## Rodando
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+```bash
+flutter pub get
+flutter run
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Design: `docs/design/ember_retro_design.md` (estilo "Retrô sem pixel", tema claro e escuro).

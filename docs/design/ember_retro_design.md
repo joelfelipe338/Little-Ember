@@ -1,4 +1,4 @@
-# Design system — Little Ember · "Retrô sem pixel"
+# Design system — CHAMMA · "Retrô sem pixel"
 
 > Guia para quem for implementar telas neste app (humano ou Claude Code).
 > Código base: `lib/theme/ember_retro_theme.dart`. Referências visuais: `docs/design/screens/*.png`.
@@ -13,7 +13,7 @@ Um painel de "rastreador" de rolês: uma **moldura coral** envolve uma **tela cr
 
 | Uso | Token | Valor |
 |---|---|---|
-| Moldura (fundo do Scaffold), status "votando" | `EmberColors.brasa` | #FF5A4E |
+| Moldura no claro, status "votando" | `EmberColors.brasa` | #FF5A4E |
 | CTA principal, item ativo da navegação | `EmberColors.sol` | #FFC43D |
 | "Decidido" / "posso" | `EmberColors.menta` | #12B886 |
 | "Talvez", foco de input, detalhe da placa | `EmberColors.lavanda` | #8B7BFF |
@@ -34,6 +34,26 @@ Um painel de "rastreador" de rolês: uma **moldura coral** envolve uma **tela cr
 - **Espaçamento**: moldura com margem lateral de 12. Blocos da moldura separados por 14. Tela interna com padding de 14 a 22. Gap entre cards de 16.
 - **Toque**: alvos de no mínimo 44px.
 
+## Tema escuro
+
+`EmberRetroTheme.dark()` usa a mesma linguagem visual com outra paleta (`RetroPalette.dark`):
+
+| Papel (`RetroPalette`) | Claro | Escuro |
+|---|---|---|
+| `moldura` | #FF5A4E (coral) | #2A2558 (índigo noite) |
+| `tela` (painel interno) | #FFF8F1 | #1B1A2E |
+| `superficie` (cards, inputs) | #FFFFFF | #2F2E42 |
+| `botaoSecundario` | #FFF8F1 | #2F2E42 |
+| `texto` / `textoSecundario` | #1B1A2E / #5E5B6E | #FFF8F1 / #B9B6C4 |
+| `contorno` (bordas e sombras) | #1B1A2E | #0B0A14 |
+| `linhaSuave` | #EFE6DA | #3A3950 |
+| `erroFundo` / `erroTexto` | #FFE9E6 / #B02A22 | #3A1F27 / #FF8A7E |
+| `invertido` / `noInvertido` | #1B1A2E / #FFF8F1 | #FFF8F1 / #1B1A2E |
+
+- No escuro, a moldura **não** é vermelha: fica índigo, para separar bem do modo claro. O coral aparece só em detalhes (chama, status "votando").
+- As cores de marca e status (sol, menta, lavanda, neblina, brasa) são iguais nos dois temas e sempre levam texto `EmberColors.tinta`.
+- Nas telas, use `final p = RetroPalette.of(context);` e `p.texto`, `p.superficie`, `p.contorno` etc. `EmberText.*` sem `color` herda a cor do tema.
+
 ## Estrutura de toda tela (`RetroScaffold`)
 
 ```
@@ -44,7 +64,7 @@ Scaffold (fundo brasa)
  └ RetroNavBar (Mapa · Rolês · Perfil)
 ```
 
-O login não tem navegação inferior nem botões nos cantos, só a placa "LITTLE (chama) EMBER".
+O login não tem navegação inferior nem botões nos cantos, só a placa "CHA (ícone) MMA".
 
 ## Componentes
 

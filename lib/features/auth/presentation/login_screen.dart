@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants.dart';
 import '../../../shared/widgets/ember_button.dart';
-import '../../../shared/widgets/ember_flame.dart';
+import '../../../shared/widgets/ember_logo.dart';
 import '../../../shared/widgets/retro_top_bar.dart';
 import '../../../theme/ember_retro_theme.dart';
 import '../providers/auth_providers.dart';
@@ -75,8 +75,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final p = RetroPalette.of(context);
     return RetroScaffold(
-      top: const RetroTopBar(left: 'LITTLE', right: 'EMBER'),
+      top: const RetroTopBar(left: 'CHAMMA'),
       ticker: 'CONVIDADOS VOTAM PELO LINK  •  O APP DECIDE POR VOCÊS  •  ${AppConstants.sloganCurto.toUpperCase()}  •',
       panelPadding: EdgeInsets.zero,
       body: SingleChildScrollView(
@@ -88,15 +89,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                const Brasinha(size: 84),
+                const EmberLogo(width: 104, bob: true),
                 const SizedBox(width: 12),
                 Flexible(
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 30),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: EmberColors.branco,
-                      border: EmberRetro.contorno,
+                      color: p.superficie,
+                      border: p.contornoBorda,
                       borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(16),
                         topRight: Radius.circular(16),
@@ -114,7 +115,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const SizedBox(height: 4),
             Text(
               AppConstants.slogan,
-              style: EmberText.body(15, color: EmberColors.textoSecundario),
+              style: EmberText.body(15, color: p.textoSecundario),
             ),
             const SizedBox(height: 22),
 
@@ -181,7 +182,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const Expanded(child: Divider()),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Text('OU', style: EmberText.mono(11, color: EmberColors.textoSecundario)),
+                  child: Text('OU', style: EmberText.mono(11, color: p.textoSecundario)),
                 ),
                 const Expanded(child: Divider()),
               ],
@@ -193,7 +194,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Expanded(
                   child: RetroButton(
                     onPressed: () => _soon('Google'),
-                    color: EmberColors.branco,
+                    color: p.superficie,
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
@@ -209,8 +210,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Expanded(
                   child: RetroButton(
                     onPressed: () => _soon('Apple'),
-                    color: EmberColors.tinta,
-                    foregroundColor: EmberColors.creme,
+                    color: p.invertido,
+                    foregroundColor: p.noInvertido,
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
@@ -230,11 +231,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               alignment: WrapAlignment.center,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                Text('Não tem conta? ', style: EmberText.body(14, color: EmberColors.textoSecundario)),
+                Text('Não tem conta? ', style: EmberText.body(14, color: p.textoSecundario)),
                 TextButton(
                   onPressed: () => context.push('/signup'),
                   style: TextButton.styleFrom(
-                    foregroundColor: EmberColors.brasaTexto,
+                    foregroundColor: p.erroTexto,
                     minimumSize: const Size(44, 44),
                   ),
                   child: const Text('Criar conta'),

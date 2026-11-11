@@ -23,7 +23,7 @@ class AppShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: EmberColors.brasa,
+      backgroundColor: RetroPalette.of(context).moldura,
       body: SafeArea(
         child: Column(
           children: [

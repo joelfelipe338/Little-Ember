@@ -9,3 +9,9 @@ Future<void> initSupabase() async {
 }
 
 SupabaseClient get supabase => Supabase.instance.client;
+
+/// Logado de verdade (email/senha, Google...), não a sessão anônima do convidado.
+bool isRealUserSession() {
+  final session = supabase.auth.currentSession;
+  return session != null && !session.user.isAnonymous;
+}

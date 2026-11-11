@@ -32,22 +32,56 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
   static const _totalSteps = 3;
 
   @override
+  void initState() {
+    super.initState();
+    _tituloController.addListener(() => setState(() {}));
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
     _tituloController.dispose();
     super.dispose();
   }
 
+  DateTime? get _firstOption => _timeOptions.isEmpty
+      ? null
+      : _timeOptions.map((o) => o.inicioUtc).reduce((a, b) => a.isBefore(b) ? a : b);
+
+  /// O prazo precisa estar no futuro e antes do primeiro horário.
+  String? get _prazoError {
+    if (!_prazoVotacao.isAfter(DateTime.now())) return 'O prazo já passou. Escolha outro.';
+    final first = _firstOption;
+    if (first != null && !_prazoVotacao.isBefore(first)) {
+      return 'A votação precisa fechar antes do primeiro horário.';
+    }
+    return null;
+  }
+
   bool get _canAdvance => switch (_currentStep) {
         0 => _tituloController.text.trim().isNotEmpty,
         1 => _timeOptions.isNotEmpty,
-        2 => true,
+        2 => _prazoError == null,
         _ => false,
       };
 
+  /// Ajusta o prazo padrão para fechar antes do primeiro horário (quando dá).
+  void _fitPrazo() {
+    final first = _firstOption;
+    if (first == null || _prazoVotacao.isBefore(first)) return;
+    final now = DateTime.now();
+    var candidate = first.subtract(const Duration(hours: 2));
+    if (!candidate.isAfter(now)) candidate = first.subtract(const Duration(minutes: 30));
+    if (candidate.isAfter(now)) _prazoVotacao = candidate;
+  }
+
   void _nextStep() {
+    FocusScope.of(context).unfocus();
     if (_currentStep < _totalSteps - 1) {
-      setState(() => _currentStep++);
+      setState(() {
+        _currentStep++;
+        if (_currentStep == _totalSteps - 1) _fitPrazo();
+      });
       _pageController.animateToPage(_currentStep,
           duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
     }
@@ -79,10 +113,23 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
     );
     if (time == null || !mounted) return;
 
+    final picked = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    if (!picked.isAfter(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Esse horário já passou. Escolha um no futuro.')),
+      );
+      return;
+    }
+    if (_timeOptions.any((o) => o.inicioUtc == picked)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Esse horário já está na lista.')),
+      );
+      return;
+    }
     setState(() {
-      _timeOptions.add(TimeOption(
-        inicioUtc: DateTime(date.year, date.month, date.day, time.hour, time.minute),
-      ));
+      _timeOptions
+        ..add(TimeOption(inicioUtc: picked))
+        ..sort((a, b) => a.inicioUtc.compareTo(b.inicioUtc));
     });
   }
 
@@ -110,7 +157,7 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
   Future<void> _createPlan() async {
     setState(() => _isCreating = true);
     try {
-      await ref.read(planRepositoryProvider).createPlan(
+      final plan = await ref.read(planRepositoryProvider).createPlan(
             titulo: _tituloController.text.trim(),
             prazoVotacao: _prazoVotacao,
             timeOptions: _timeOptions,
@@ -118,9 +165,10 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
       ref.invalidate(myPlansProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rolê criado com sucesso!')),
+          const SnackBar(content: Text('Rolê criado! Agora manda o link pra galera.')),
         );
-        context.pop();
+        // Troca o assistente pelo painel do rolê (voltar leva para a Home).
+        context.pushReplacement('/plan/${plan.id}');
       }
     } catch (e) {
       if (mounted) {
@@ -188,6 +236,7 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
                   titulo: _tituloController.text,
                   timeOptions: _timeOptions,
                   prazoVotacao: _prazoVotacao,
+                  prazoError: _prazoError,
                   onPickPrazo: _pickPrazo,
                 ),
               ],
@@ -362,12 +411,14 @@ class _StepRevisao extends StatelessWidget {
     required this.titulo,
     required this.timeOptions,
     required this.prazoVotacao,
+    required this.prazoError,
     required this.onPickPrazo,
   });
 
   final String titulo;
   final List<TimeOption> timeOptions;
   final DateTime prazoVotacao;
+  final String? prazoError;
   final VoidCallback onPickPrazo;
 
   @override
@@ -409,6 +460,10 @@ class _StepRevisao extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (prazoError != null) ...[
+                  const SizedBox(height: 12),
+                  RetroErrorBox(prazoError!),
+                ],
               ],
             ),
           ),

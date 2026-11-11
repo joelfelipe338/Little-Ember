@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/ember_retro_theme.dart';
-import 'ember_flame.dart';
+import 'ember_logo.dart';
 
 /// Topo padrão das telas: [ação esquerda] — placa central — [ação direita].
 /// Os lados vazios ganham um espaço do mesmo tamanho para a placa ficar centralizada.
@@ -9,7 +9,7 @@ class RetroTopBar extends StatelessWidget {
   const RetroTopBar({
     super.key,
     required this.left,
-    required this.right,
+    this.right = '',
     this.emblem,
     this.leading,
     this.trailing,
@@ -18,7 +18,7 @@ class RetroTopBar extends StatelessWidget {
   final String left;
   final String right;
 
-  /// Conteúdo do círculo central da placa. Padrão: a chama do app.
+  /// Conteúdo do círculo central da placa. Padrão: o ícone do app.
   final Widget? emblem;
   final Widget? leading;
   final Widget? trailing;
@@ -37,7 +37,7 @@ class RetroTopBar extends StatelessWidget {
               child: RetroPlaque(
                 left: left,
                 right: right,
-                emblem: emblem ?? const EmberFlame(size: 25),
+                emblem: emblem ?? const EmberLogo(width: 34, semanticLabel: null),
               ),
             ),
           ),
@@ -71,21 +71,22 @@ class RetroErrorBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = RetroPalette.of(context);
     return Semantics(
       liveRegion: true,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: EmberColors.erroFundo,
+          color: p.erroFundo,
           borderRadius: BorderRadius.circular(EmberRetro.raioBotao),
           border: Border.all(color: EmberColors.brasaForte, width: 2),
         ),
         child: Row(
           children: [
-            const Icon(Icons.error_outline, size: 20, color: EmberColors.brasaTexto),
+            Icon(Icons.error_outline, size: 20, color: p.erroTexto),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(message, style: EmberText.body(14, color: EmberColors.brasaTexto, weight: FontWeight.w600)),
+              child: Text(message, style: EmberText.body(14, color: p.erroTexto, weight: FontWeight.w600)),
             ),
           ],
         ),
@@ -100,10 +101,11 @@ class RetroButtonSpinner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SizedBox(
+    // Usa a cor do texto do botão em que está (tinta no amarelo, clara nos fundos escuros).
+    return SizedBox(
       width: 20,
       height: 20,
-      child: CircularProgressIndicator(strokeWidth: 3, color: EmberColors.tinta),
+      child: CircularProgressIndicator(strokeWidth: 3, color: IconTheme.of(context).color),
     );
   }
 }

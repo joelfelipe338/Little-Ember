@@ -3,7 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../theme/ember_retro_theme.dart';
 
-/// A chama do Little Ember (logo), vetorial. Substitui o emoji 🔥.
+/// A chama do CHAMMA (logo), vetorial. Substitui o emoji 🔥.
 class EmberFlame extends StatelessWidget {
   const EmberFlame({
     super.key,
@@ -53,7 +53,7 @@ class Brasinha extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget mascot = Semantics(
       image: true,
-      label: 'Brasinha, o mascote do Little Ember',
+      label: 'Brasinha, o mascote do CHAMMA',
       child: CustomPaint(
         size: Size(size * 0.8, size),
         painter: const _FlamePainter(

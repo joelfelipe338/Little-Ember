@@ -28,6 +28,12 @@ class Plan {
   final String? lugarFinalId;
   final DateTime? createdAt;
 
+  /// A votação ainda aceita votos (status "votando" e prazo no futuro).
+  bool get isVotingOpen => status == PlanStatus.votando && prazoVotacao.isAfter(DateTime.now());
+
+  /// Status "votando", mas o prazo já passou (aguardando o fechamento).
+  bool get isPastDeadline => status == PlanStatus.votando && !prazoVotacao.isAfter(DateTime.now());
+
   factory Plan.fromSupabase(Map<String, dynamic> row) => Plan(
         id: row['id'] as String,
         slug: row['slug'] as String,

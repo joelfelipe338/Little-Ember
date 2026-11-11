@@ -14,7 +14,7 @@ class ConnectionsScreen extends ConsumerWidget {
       top: const RetroTopBar(
         left: 'SUAS',
         right: 'CONEXÕES',
-        emblem: Icon(Icons.people_alt_rounded, size: 22, color: EmberColors.tinta),
+        emblem: Icon(Icons.people_alt_rounded, size: 22),
       ),
       body: RetroEmptyState(
         illustration: const Icon(Icons.diversity_3_rounded, size: 72, color: EmberColors.lavanda),

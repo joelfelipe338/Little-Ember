@@ -30,7 +30,7 @@ class EmberButton extends StatelessWidget {
       onPressed: isLoading ? () {} : onPressed,
       expand: expand,
       height: 50,
-      color: variant == EmberButtonVariant.primary ? EmberColors.sol : EmberColors.branco,
+      color: variant == EmberButtonVariant.primary ? EmberColors.sol : RetroPalette.of(context).superficie,
       semanticLabel: isLoading ? 'Carregando' : null,
       child: isLoading
           ? const RetroButtonSpinner()

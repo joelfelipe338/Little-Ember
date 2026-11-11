@@ -18,6 +18,7 @@ class RetroEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = RetroPalette.of(context);
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -30,11 +31,11 @@ class RetroEmptyState extends StatelessWidget {
                 width: 148,
                 height: 148,
                 alignment: Alignment.center,
-                decoration: const BoxDecoration(
-                  color: EmberColors.branco,
+                decoration: BoxDecoration(
+                  color: p.superficie,
                   shape: BoxShape.circle,
-                  border: Border.fromBorderSide(BorderSide(color: EmberColors.tinta, width: EmberRetro.borda)),
-                  boxShadow: [BoxShadow(color: EmberColors.tinta, offset: Offset(0, 6))],
+                  border: p.contornoBorda,
+                  boxShadow: [BoxShadow(color: p.contorno, offset: const Offset(0, 6))],
                 ),
                 child: illustration,
               ),
@@ -43,7 +44,7 @@ class RetroEmptyState extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 message,
-                style: EmberText.body(15, color: EmberColors.textoSecundario).copyWith(height: 1.45),
+                style: EmberText.body(15, color: p.textoSecundario).copyWith(height: 1.45),
                 textAlign: TextAlign.center,
               ),
               if (action != null) ...[

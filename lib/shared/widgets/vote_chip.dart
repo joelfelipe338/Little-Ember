@@ -30,6 +30,8 @@ class VoteChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (label, icon, color) = _config;
+    final p = RetroPalette.of(context);
+    final fg = selected ? EmberColors.tinta : p.texto;
 
     return Semantics(
       button: true,
@@ -45,22 +47,22 @@ class VoteChip extends StatelessWidget {
             color: selected ? color : color.withAlpha(46),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: selected ? EmberColors.tinta : Colors.transparent,
+              color: selected ? p.contorno : Colors.transparent,
               width: EmberRetro.borda,
             ),
             boxShadow: selected
-                ? const [BoxShadow(color: EmberColors.tinta, offset: Offset(0, 3))]
+                ? [BoxShadow(color: p.contorno, offset: const Offset(0, 3))]
                 : null,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 16, color: EmberColors.tinta),
+              Icon(icon, size: 16, color: fg),
               const SizedBox(width: 5),
-              Text(label, style: EmberText.body(13, weight: FontWeight.w800)),
+              Text(label, style: EmberText.body(13, color: fg, weight: FontWeight.w800)),
               if (count != null) ...[
                 const SizedBox(width: 5),
-                Text('$count', style: EmberText.body(13, color: EmberColors.textoSecundario, weight: FontWeight.w700)),
+                Text('$count', style: EmberText.body(13, color: selected ? EmberColors.tinta : p.textoSecundario, weight: FontWeight.w700)),
               ],
             ],
           ),
