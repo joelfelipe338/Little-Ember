@@ -10,6 +10,7 @@ class PlanMember {
     this.userId,
     required this.nome,
     this.papel = MemberRole.convidado,
+    this.essencial = false,
     this.createdAt,
   });
 
@@ -18,6 +19,7 @@ class PlanMember {
   final String? userId;
   final String nome;
   final MemberRole papel;
+  final bool essencial;
   final DateTime? createdAt;
 
   bool get isOrganizador => papel == MemberRole.organizador;
@@ -30,6 +32,7 @@ class PlanMember {
             ? row['nome_exibicao'] as String
             : 'Sem nome',
         papel: MemberRole.values.byName(row['papel'] as String),
+        essencial: (row['essencial'] as bool?) ?? false,
         createdAt: row['created_at'] != null ? DateTime.parse(row['created_at'] as String) : null,
       );
 }

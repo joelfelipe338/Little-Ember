@@ -76,6 +76,7 @@ class PlanOptionCard extends StatelessWidget {
     required this.isFinal,
     required this.myVote,
     required this.onVote,
+    this.showTally = true,
   });
 
   final String label;
@@ -84,67 +85,80 @@ class PlanOptionCard extends StatelessWidget {
   final bool isFinal;
   final Disp? myVote;
   final ValueChanged<Disp>? onVote;
+  final bool showTally;
 
   @override
   Widget build(BuildContext context) {
     final p = RetroPalette.of(context);
     final total = tally.total;
+    final isEliminated = tally.eliminated;
 
-    return RetroCard(
-      padding: const EdgeInsets.all(14),
-      color: isFinal ? EmberColors.menta.withAlpha(46) : null,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.calendar_today_rounded, size: 18, color: p.textoSecundario),
-              const SizedBox(width: 8),
-              Expanded(child: Text(label, style: EmberText.body(16, weight: FontWeight.w700))),
-              if (isLeader) const RetroTag('Liderando', color: EmberColors.sol),
-              if (isFinal) const RetroTag('Escolhido', color: EmberColors.menta),
-            ],
-          ),
-          const SizedBox(height: 10),
-          // Barra empilhada: posso / talvez / não posso
-          Container(
-            height: 12,
-            decoration: BoxDecoration(
-              color: p.superficie,
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: p.contorno, width: 2),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: total == 0
-                ? null
-                : Row(
-                    children: [
-                      if (tally.posso > 0) Expanded(flex: tally.posso, child: const ColoredBox(color: EmberColors.menta)),
-                      if (tally.talvez > 0) Expanded(flex: tally.talvez, child: const ColoredBox(color: EmberColors.lavanda)),
-                      if (tally.nao > 0) Expanded(flex: tally.nao, child: const ColoredBox(color: EmberColors.neblina)),
-                    ],
-                  ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            total == 0
-                ? 'Ninguém votou ainda'
-                : '${tally.posso} posso · ${tally.talvez} talvez · ${tally.nao} não posso',
-            style: EmberText.body(12, color: p.textoSecundario, weight: FontWeight.w600),
-          ),
-          if (onVote != null) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+    return Opacity(
+      opacity: isEliminated ? 0.55 : 1.0,
+      child: RetroCard(
+        padding: const EdgeInsets.all(14),
+        color: isFinal ? EmberColors.menta.withAlpha(46) : null,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
               children: [
-                VoteChip(type: VoteType.posso, selected: myVote == Disp.posso, onTap: () => onVote!(Disp.posso)),
-                VoteChip(type: VoteType.talvez, selected: myVote == Disp.talvez, onTap: () => onVote!(Disp.talvez)),
-                VoteChip(type: VoteType.naoPosso, selected: myVote == Disp.naoPosso, onTap: () => onVote!(Disp.naoPosso)),
+                Icon(Icons.calendar_today_rounded, size: 18, color: p.textoSecundario),
+                const SizedBox(width: 8),
+                Expanded(child: Text(label, style: EmberText.body(16, weight: FontWeight.w700))),
+                if (isEliminated) const RetroTag('Eliminado', color: EmberColors.neblina)
+                else if (isLeader) const RetroTag('Liderando', color: EmberColors.sol),
+                if (isFinal) const RetroTag('Escolhido', color: EmberColors.menta),
               ],
             ),
+            if (showTally) ...[
+              const SizedBox(height: 10),
+              Container(
+                height: 12,
+                decoration: BoxDecoration(
+                  color: p.superficie,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: p.contorno, width: 2),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: total == 0
+                    ? null
+                    : Row(
+                        children: [
+                          if (tally.posso > 0) Expanded(flex: tally.posso, child: const ColoredBox(color: EmberColors.menta)),
+                          if (tally.talvez > 0) Expanded(flex: tally.talvez, child: const ColoredBox(color: EmberColors.lavanda)),
+                          if (tally.nao > 0) Expanded(flex: tally.nao, child: const ColoredBox(color: EmberColors.neblina)),
+                        ],
+                      ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                total == 0
+                    ? 'Ninguém votou ainda'
+                    : '${tally.posso} posso · ${tally.talvez} talvez · ${tally.nao} não posso',
+                style: EmberText.body(12, color: p.textoSecundario, weight: FontWeight.w600),
+              ),
+            ] else ...[
+              const SizedBox(height: 10),
+              Text(
+                'Votos ocultos',
+                style: EmberText.body(12, color: p.textoSecundario, weight: FontWeight.w600),
+              ),
+            ],
+            if (onVote != null) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  VoteChip(type: VoteType.posso, selected: myVote == Disp.posso, onTap: () => onVote!(Disp.posso)),
+                  VoteChip(type: VoteType.talvez, selected: myVote == Disp.talvez, onTap: () => onVote!(Disp.talvez)),
+                  VoteChip(type: VoteType.naoPosso, selected: myVote == Disp.naoPosso, onTap: () => onVote!(Disp.naoPosso)),
+                ],
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

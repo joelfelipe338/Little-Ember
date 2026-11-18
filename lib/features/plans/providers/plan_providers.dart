@@ -35,6 +35,12 @@ final planMembersProvider = StreamProvider.autoDispose.family<List<PlanMember>, 
   return ref.watch(planRepositoryProvider).watchMembers(planId);
 });
 
+/// Convidados pré-adicionados que ainda não reivindicaram vaga.
+final unclaimedMembersProvider =
+    FutureProvider.autoDispose.family<List<PlanMember>, String>((ref, planId) {
+  return ref.watch(planRepositoryProvider).getUnclaimedMembers(planId);
+});
+
 /// Votos de todas as opções do rolê, atualizados ao vivo.
 final planVotesProvider = StreamProvider.autoDispose.family<List<TimeVote>, String>((ref, planId) async* {
   final options = await ref.watch(planOptionsProvider(planId).future);

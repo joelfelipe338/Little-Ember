@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 import '../../../core/supabase/supabase_client.dart';
+import '../domain/invited_person.dart';
 import '../domain/plan.dart';
 import '../domain/plan_member.dart';
 import '../domain/time_option.dart';
@@ -14,11 +15,15 @@ class PlanRepository {
     required String titulo,
     required DateTime prazoVotacao,
     required List<TimeOption> timeOptions,
+    List<InvitedPerson> convidados = const [],
+    bool votosVisiveis = true,
+    int quorumMinimo = 0,
+    String semRespostaContaComo = 'nada',
+    bool essencialVisivel = false,
   }) async {
     final planId = const Uuid().v4();
     final slug = planId.substring(0, 8);
 
-    // Nome do organizador, para aparecer na lista da galera.
     final profile = await supabase.from('profiles').select('nome').eq('id', _userId).maybeSingle();
     final nome = (profile?['nome'] as String?)?.trim();
 
@@ -28,6 +33,10 @@ class PlanRepository {
       'criador_id': _userId,
       'titulo': titulo,
       'prazo_votacao': prazoVotacao.toUtc().toIso8601String(),
+      'votos_visiveis': votosVisiveis,
+      'quorum_minimo': quorumMinimo,
+      'sem_resposta_conta_como': semRespostaContaComo,
+      'essencial_visivel': essencialVisivel,
     }).select().single();
 
     await supabase.from('plan_members').insert({
@@ -36,6 +45,19 @@ class PlanRepository {
       'nome_exibicao': (nome == null || nome.isEmpty) ? 'Organizador' : nome,
       'papel': 'organizador',
     });
+
+    if (convidados.isNotEmpty) {
+      await supabase.from('plan_members').insert(
+        convidados
+            .map((c) => {
+                  'plan_id': planId,
+                  'nome_exibicao': c.nome,
+                  'papel': 'convidado',
+                  'essencial': c.essencial,
+                })
+            .toList(),
+      );
+    }
 
     if (timeOptions.isNotEmpty) {
       await supabase.from('time_options').insert(
@@ -149,6 +171,33 @@ class PlanRepository {
   Future<PlanMember?> getMyMemberIfAny(String planId) async {
     if (supabase.auth.currentUser == null) return null;
     return getMyMember(planId);
+  }
+
+  /// Convidados pré-adicionados que ainda não reivindicaram sua vaga.
+  Future<List<PlanMember>> getUnclaimedMembers(String planId) async {
+    final rows = await supabase
+        .from('plan_members')
+        .select()
+        .eq('plan_id', planId)
+        .isFilter('user_id', null)
+        .eq('papel', 'convidado')
+        .order('nome_exibicao');
+    return rows.map(PlanMember.fromSupabase).toList();
+  }
+
+  /// Convidado reivindica uma vaga pré-adicionada (seta user_id).
+  Future<PlanMember> claimMember({required String memberId}) async {
+    if (supabase.auth.currentSession == null) {
+      await supabase.auth.signInAnonymously();
+    }
+    final row = await supabase
+        .from('plan_members')
+        .update({'user_id': _userId})
+        .eq('id', memberId)
+        .isFilter('user_id', null)
+        .select()
+        .single();
+    return PlanMember.fromSupabase(row);
   }
 
   // ---------------------------------------------------------------- ações

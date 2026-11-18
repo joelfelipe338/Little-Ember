@@ -141,6 +141,27 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
     }
   }
 
+  Future<void> _claim(PlanMember member) async {
+    if (_joining) return;
+    setState(() {
+      _joining = true;
+      _joinError = null;
+    });
+    try {
+      await ref.read(planRepositoryProvider).claimMember(memberId: member.id);
+      ref.invalidate(myMemberProvider(plan.id));
+      ref.invalidate(unclaimedMembersProvider(plan.id));
+      await ref.read(myMemberProvider(plan.id).future);
+    } catch (e) {
+      debugPrint('⚠️ Claim error: $e');
+      if (mounted) {
+        setState(() => _joinError = 'Não deu pra entrar no rolê: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _joining = false);
+    }
+  }
+
   Future<void> _vote(TimeOption option, PlanMember me, Disp disp) async {
     setState(() => _pending[option.id!] = disp);
     try {
@@ -163,10 +184,22 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
     final meAsync = ref.watch(myMemberProvider(plan.id));
     final me = meAsync.valueOrNull;
 
-    final ranking = rankOptions(options, votes);
-    final hasClearLeader = ranking.isNotEmpty && ranking.first.total > 0 &&
+    final essentialIds = {
+      for (final m in members) if (m.essencial) m.id,
+    };
+    final ranking = rankOptions(
+      options,
+      votes,
+      essentialMemberIds: essentialIds,
+      semRespostaContaComo: plan.semRespostaContaComo,
+      totalMembers: members.length,
+    );
+    final hasClearLeader = ranking.isNotEmpty &&
+        ranking.first.total > 0 &&
+        !ranking.first.eliminated &&
         (ranking.length < 2 || ranking.first.score > ranking[1].score);
     final leader = hasClearLeader ? ranking.first : null;
+    final showTally = plan.votosVisiveis;
     final tallyById = {for (final t in ranking) t.option.id!: t};
     final myVotes = <String, Disp>{
       for (final v in votes)
@@ -209,11 +242,13 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
                             padding: EdgeInsets.all(24),
                             child: Center(child: CircularProgressIndicator()),
                           )
-                        : _JoinCard(
-                            controller: _nameController,
-                            loading: _joining,
-                            error: _joinError,
-                            onSubmit: _join,
+                        : _JoinOrClaimSection(
+                            plan: plan,
+                            nameController: _nameController,
+                            joining: _joining,
+                            joinError: _joinError,
+                            onJoin: _join,
+                            onClaim: _claim,
                           ),
 
                   if (!plan.isVotingOpen && plan.status == PlanStatus.votando)
@@ -247,10 +282,11 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
                       PlanOptionCard(
                         label: _fmtOption(o),
                         tally: tallyById[o.id] ?? OptionTally(o),
-                        isLeader: leader != null && leader.option.id == o.id && plan.status == PlanStatus.votando,
+                        isLeader: showTally && leader != null && leader.option.id == o.id && plan.status == PlanStatus.votando,
                         isFinal: plan.horarioFinalId == o.id,
                         myVote: myVotes[o.id],
                         onVote: canVote ? (d) => _vote(o, me!, d) : null,
+                        showTally: showTally,
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -530,6 +566,182 @@ class _MemberChip extends StatelessWidget {
             style: EmberText.body(13, weight: FontWeight.w700, color: voted ? EmberColors.tinta : p.texto),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _JoinOrClaimSection extends ConsumerStatefulWidget {
+  const _JoinOrClaimSection({
+    required this.plan,
+    required this.nameController,
+    required this.joining,
+    required this.joinError,
+    required this.onJoin,
+    required this.onClaim,
+  });
+
+  final Plan plan;
+  final TextEditingController nameController;
+  final bool joining;
+  final String? joinError;
+  final VoidCallback onJoin;
+  final ValueChanged<PlanMember> onClaim;
+
+  @override
+  ConsumerState<_JoinOrClaimSection> createState() =>
+      _JoinOrClaimSectionState();
+}
+
+class _JoinOrClaimSectionState extends ConsumerState<_JoinOrClaimSection> {
+  bool _showFallback = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final unclaimedAsync =
+        ref.watch(unclaimedMembersProvider(widget.plan.id));
+
+    return unclaimedAsync.when(
+      loading: () => const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, __) => _JoinCard(
+        controller: widget.nameController,
+        loading: widget.joining,
+        error: widget.joinError,
+        onSubmit: widget.onJoin,
+      ),
+      data: (unclaimed) {
+        if (unclaimed.isEmpty || _showFallback) {
+          return _JoinCard(
+            controller: widget.nameController,
+            loading: widget.joining,
+            error: widget.joinError,
+            onSubmit: widget.onJoin,
+          );
+        }
+        return _ClaimCard(
+          unclaimed: unclaimed,
+          plan: widget.plan,
+          loading: widget.joining,
+          error: widget.joinError,
+          onClaim: widget.onClaim,
+          onShowFallback: () => setState(() => _showFallback = true),
+        );
+      },
+    );
+  }
+}
+
+class _ClaimCard extends StatelessWidget {
+  const _ClaimCard({
+    required this.unclaimed,
+    required this.plan,
+    required this.loading,
+    required this.error,
+    required this.onClaim,
+    required this.onShowFallback,
+  });
+
+  final List<PlanMember> unclaimed;
+  final Plan plan;
+  final bool loading;
+  final String? error;
+  final ValueChanged<PlanMember> onClaim;
+  final VoidCallback onShowFallback;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = RetroPalette.of(context);
+
+    return RetroCard(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Quem é você?', style: EmberText.display(22)),
+          const SizedBox(height: 4),
+          Text(
+            'Escolha seu nome na lista pra entrar no rolê.',
+            style: EmberText.body(14, color: p.textoSecundario),
+          ),
+          const SizedBox(height: 14),
+          for (final member in unclaimed) ...[
+            _ClaimRow(
+              member: member,
+              showEssencial: plan.essencialVisivel,
+              loading: loading,
+              onTap: () => onClaim(member),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (error != null) ...[
+            const SizedBox(height: 4),
+            RetroErrorBox(error!),
+          ],
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton(
+              onPressed: onShowFallback,
+              child: Text(
+                'Não estou na lista',
+                style: EmberText.body(14, color: p.textoSecundario),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ClaimRow extends StatelessWidget {
+  const _ClaimRow({
+    required this.member,
+    required this.showEssencial,
+    required this.loading,
+    required this.onTap,
+  });
+
+  final PlanMember member;
+  final bool showEssencial;
+  final bool loading;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = RetroPalette.of(context);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: loading ? null : onTap,
+        borderRadius: BorderRadius.circular(EmberRetro.raioCard),
+        child: RetroCard(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          child: Row(
+            children: [
+              Icon(Icons.person_rounded, size: 20, color: p.textoSecundario),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  member.nome,
+                  style: EmberText.body(15, weight: FontWeight.w700),
+                ),
+              ),
+              if (showEssencial && member.essencial)
+                const Padding(
+                  padding: EdgeInsets.only(right: 6),
+                  child: Icon(
+                    Icons.local_fire_department_rounded,
+                    color: EmberColors.brasa,
+                    size: 18,
+                  ),
+                ),
+              Icon(Icons.arrow_forward_rounded, size: 18, color: p.textoSecundario),
+            ],
+          ),
+        ),
       ),
     );
   }

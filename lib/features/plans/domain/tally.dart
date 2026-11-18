@@ -9,20 +9,34 @@ class OptionTally {
   int posso = 0;
   int talvez = 0;
   int nao = 0;
+  bool eliminated = false;
 
   int get total => posso + talvez + nao;
 
   /// Pontuação usada no placar: "Posso" vale 2, "Talvez" vale 1.
-  int get score => posso * 2 + talvez;
+  /// Eliminados ficam com -1 para irem ao final do ranking.
+  int get score => eliminated ? -1 : posso * 2 + talvez;
 }
 
 /// Ordena as opções do placar. Critérios de desempate (do plano do produto):
 /// mais pontos → mais "Posso" → menos "Não posso" → data mais cedo.
-List<OptionTally> rankOptions(List<TimeOption> options, List<TimeVote> votes) {
+/// Eliminados (essencial votou "Não posso") vão para o final.
+List<OptionTally> rankOptions(
+  List<TimeOption> options,
+  List<TimeVote> votes, {
+  Set<String> essentialMemberIds = const {},
+  String semRespostaContaComo = 'nada',
+  int totalMembers = 0,
+}) {
   final byId = {for (final o in options) o.id!: OptionTally(o)};
+  final votedMembers = <String, Set<String>>{
+    for (final o in options) o.id!: {},
+  };
+
   for (final v in votes) {
     final t = byId[v.timeOptionId];
     if (t == null) continue;
+    votedMembers[v.timeOptionId]!.add(v.memberId);
     switch (v.disp) {
       case Disp.posso:
         t.posso++;
@@ -30,10 +44,22 @@ List<OptionTally> rankOptions(List<TimeOption> options, List<TimeVote> votes) {
         t.talvez++;
       case Disp.naoPosso:
         t.nao++;
+        if (essentialMemberIds.contains(v.memberId)) {
+          t.eliminated = true;
+        }
     }
   }
+
+  if (semRespostaContaComo == 'nao_posso' && totalMembers > 0) {
+    for (final entry in byId.entries) {
+      final missing = totalMembers - votedMembers[entry.key]!.length;
+      if (missing > 0) entry.value.nao += missing;
+    }
+  }
+
   final list = byId.values.toList()
     ..sort((a, b) {
+      if (a.eliminated != b.eliminated) return a.eliminated ? 1 : -1;
       var c = b.score.compareTo(a.score);
       if (c != 0) return c;
       c = b.posso.compareTo(a.posso);

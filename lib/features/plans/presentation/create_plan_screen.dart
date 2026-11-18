@@ -5,6 +5,9 @@ import 'package:intl/intl.dart';
 import '../../../shared/widgets/ember_button.dart';
 import '../../../shared/widgets/retro_top_bar.dart';
 import '../../../theme/ember_retro_theme.dart';
+import '../../connections/domain/contact.dart';
+import '../../connections/providers/connections_providers.dart';
+import '../domain/invited_person.dart';
 import '../domain/time_option.dart';
 import '../providers/plan_providers.dart';
 
@@ -20,16 +23,25 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
   int _currentStep = 0;
   bool _isCreating = false;
 
-  // Step 1
+  // Step 0: Título
   final _tituloController = TextEditingController();
 
-  // Step 2
+  // Step 1: Horários
   final List<TimeOption> _timeOptions = [];
 
-  // Step 3
+  // Step 2: Convidados
+  final List<InvitedPerson> _convidados = [];
+
+  // Step 3: Regras
+  bool _votosVisiveis = true;
+  bool _essencialVisivel = false;
+  int _quorumMinimo = 0;
+  String _semRespostaContaComo = 'nada';
+
+  // Step 4: Revisão + Prazo
   DateTime _prazoVotacao = DateTime.now().add(const Duration(days: 3));
 
-  static const _totalSteps = 3;
+  static const _totalSteps = 5;
 
   @override
   void initState() {
@@ -61,7 +73,9 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
   bool get _canAdvance => switch (_currentStep) {
         0 => _tituloController.text.trim().isNotEmpty,
         1 => _timeOptions.isNotEmpty,
-        2 => _prazoError == null,
+        2 => true,
+        3 => true,
+        4 => _prazoError == null,
         _ => false,
       };
 
@@ -159,13 +173,26 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
             titulo: _tituloController.text.trim(),
             prazoVotacao: _prazoVotacao,
             timeOptions: _timeOptions,
+            convidados: _convidados,
+            votosVisiveis: _votosVisiveis,
+            quorumMinimo: _quorumMinimo,
+            semRespostaContaComo: _semRespostaContaComo,
+            essencialVisivel: _essencialVisivel,
           );
+
+      if (_convidados.isNotEmpty) {
+        ref
+            .read(connectionsRepositoryProvider)
+            .saveContacts(_convidados)
+            .catchError((_) {});
+        ref.invalidate(myContactsProvider);
+      }
+
       ref.invalidate(myPlansProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Rolê criado! Agora manda o link pra galera.')),
         );
-        // Troca o assistente pelo painel do rolê (voltar leva para a Home).
         context.pushReplacement('/plan/${plan.id}');
       }
     } catch (e) {
@@ -230,12 +257,40 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
                   onAdd: _addTimeOptions,
                   onRemove: (i) => setState(() => _timeOptions.removeAt(i)),
                 ),
+                _StepConvidados(
+                  convidados: _convidados,
+                  onAdd: (p) => setState(() => _convidados.add(p)),
+                  onRemove: (i) => setState(() => _convidados.removeAt(i)),
+                  onToggleEssencial: (i) => setState(() {
+                    _convidados[i] = _convidados[i].copyWith(
+                      essencial: !_convidados[i].essencial,
+                    );
+                  }),
+                ),
+                _StepRegras(
+                  votosVisiveis: _votosVisiveis,
+                  essencialVisivel: _essencialVisivel,
+                  quorumMinimo: _quorumMinimo,
+                  semRespostaContaComo: _semRespostaContaComo,
+                  hasEssenciais: _convidados.any((c) => c.essencial),
+                  onVotosVisiveisChanged: (v) =>
+                      setState(() => _votosVisiveis = v),
+                  onEssencialVisivelChanged: (v) =>
+                      setState(() => _essencialVisivel = v),
+                  onQuorumChanged: (v) =>
+                      setState(() => _quorumMinimo = v),
+                  onSemRespostaChanged: (v) =>
+                      setState(() => _semRespostaContaComo = v),
+                ),
                 _StepRevisao(
                   titulo: _tituloController.text,
                   timeOptions: _timeOptions,
                   prazoVotacao: _prazoVotacao,
                   prazoError: _prazoError,
                   onPickPrazo: _pickPrazo,
+                  convidados: _convidados,
+                  votosVisiveis: _votosVisiveis,
+                  quorumMinimo: _quorumMinimo,
                 ),
               ],
             ),
@@ -411,6 +466,9 @@ class _StepRevisao extends StatelessWidget {
     required this.prazoVotacao,
     required this.prazoError,
     required this.onPickPrazo,
+    required this.convidados,
+    required this.votosVisiveis,
+    required this.quorumMinimo,
   });
 
   final String titulo;
@@ -418,19 +476,22 @@ class _StepRevisao extends StatelessWidget {
   final DateTime prazoVotacao;
   final String? prazoError;
   final VoidCallback onPickPrazo;
+  final List<InvitedPerson> convidados;
+  final bool votosVisiveis;
+  final int quorumMinimo;
 
   @override
   Widget build(BuildContext context) {
     final tokens = RetroTokens.of(context);
     final dateFormat = DateFormat("EEE, d 'de' MMM – HH:mm", 'pt_BR');
     final prazoFormat = DateFormat("d 'de' MMM, HH:mm", 'pt_BR');
+    final essenciais = convidados.where((c) => c.essencial).length;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Prazo de votação
           RetroCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -468,7 +529,6 @@ class _StepRevisao extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Resumo
           RetroCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -481,6 +541,24 @@ class _StepRevisao extends StatelessWidget {
                     '${timeOptions.length} horário${timeOptions.length != 1 ? 's' : ''}', tokens),
                 const SizedBox(height: 10),
                 _resumeRow(Icons.timer_rounded, 'Prazo', prazoFormat.format(prazoVotacao), tokens),
+                if (convidados.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  _resumeRow(Icons.people_alt_rounded, 'Convidados',
+                      '${convidados.length} pessoa${convidados.length != 1 ? 's' : ''}', tokens),
+                ],
+                if (essenciais > 0) ...[
+                  const SizedBox(height: 10),
+                  _resumeRow(Icons.local_fire_department_rounded, 'Essenciais',
+                      '$essenciais', tokens),
+                ],
+                const SizedBox(height: 10),
+                _resumeRow(Icons.visibility_rounded, 'Votos',
+                    votosVisiveis ? 'Visíveis' : 'Ocultos', tokens),
+                if (quorumMinimo > 0) ...[
+                  const SizedBox(height: 10),
+                  _resumeRow(Icons.group_rounded, 'Quórum',
+                      '$quorumMinimo pessoa${quorumMinimo != 1 ? 's' : ''}', tokens),
+                ],
                 if (timeOptions.isNotEmpty) ...[
                   const SizedBox(height: 14),
                   Divider(color: tokens.divider, height: 2),
@@ -517,6 +595,671 @@ class _StepRevisao extends StatelessWidget {
               overflow: TextOverflow.ellipsis),
         ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// STEP 3: Convidados
+// ---------------------------------------------------------------------------
+
+class _StepConvidados extends ConsumerWidget {
+  const _StepConvidados({
+    required this.convidados,
+    required this.onAdd,
+    required this.onRemove,
+    required this.onToggleEssencial,
+  });
+
+  final List<InvitedPerson> convidados;
+  final ValueChanged<InvitedPerson> onAdd;
+  final ValueChanged<int> onRemove;
+  final ValueChanged<int> onToggleEssencial;
+
+  static const _tipoLabels = {
+    ConnectionType.amigos: 'Amigo',
+    ConnectionType.casal: 'Casal',
+    ConnectionType.familia: 'Família',
+    ConnectionType.trabalho: 'Trabalho',
+    ConnectionType.outro: 'Outro',
+  };
+
+  static const _tipoCores = {
+    ConnectionType.amigos: EmberColors.lavanda,
+    ConnectionType.casal: EmberColors.brasa,
+    ConnectionType.familia: EmberColors.menta,
+    ConnectionType.trabalho: EmberColors.sol,
+    ConnectionType.outro: EmberColors.neblina,
+  };
+
+  Future<void> _showAddSheet(BuildContext context) async {
+    final result = await showModalBottomSheet<InvitedPerson>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _AddPersonSheet(),
+    );
+    if (result != null) onAdd(result);
+  }
+
+  Future<void> _showContactsSheet(BuildContext context, List<Contact> contacts) async {
+    final existing = convidados.map((c) => c.nome.toLowerCase()).toSet();
+    final available = contacts.where((c) => !existing.contains(c.nome.toLowerCase())).toList();
+    if (available.isEmpty) return;
+
+    final picked = await showModalBottomSheet<Contact>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _PickContactSheet(contacts: available),
+    );
+    if (picked != null) {
+      onAdd(InvitedPerson(
+        nome: picked.nome,
+        tipo: picked.tipo,
+        existingContactId: picked.id,
+      ));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = RetroTokens.of(context);
+    final p = RetroPalette.of(context);
+    final contactsAsync = ref.watch(myContactsProvider);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          RetroCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('CONVIDADOS', style: EmberText.mono(10, color: tokens.textSecondary)),
+                const SizedBox(height: 10),
+                Text(
+                  'Adicione quem vai participar. Você pode marcar quem é essencial.',
+                  style: EmberText.body(14, color: tokens.textSecondary),
+                ),
+                const SizedBox(height: 14),
+
+                if (convidados.isNotEmpty) ...[
+                  ...List.generate(convidados.length, (i) {
+                    final person = convidados[i];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: RetroCard(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    person.nome,
+                                    style: EmberText.body(15, weight: FontWeight.w700),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  RetroTag(
+                                    _tipoLabels[person.tipo] ?? 'Outro',
+                                    color: _tipoCores[person.tipo] ?? EmberColors.neblina,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => onToggleEssencial(i),
+                              tooltip: person.essencial ? 'Remover essencial' : 'Marcar essencial',
+                              icon: Icon(
+                                Icons.local_fire_department_rounded,
+                                color: person.essencial
+                                    ? EmberColors.brasa
+                                    : p.textoSecundario.withAlpha(100),
+                                size: 22,
+                              ),
+                            ),
+                            RetroButton.icon(
+                              onPressed: () => onRemove(i),
+                              semanticLabel: 'Remover',
+                              color: EmberColors.brasa.withAlpha(30),
+                              icon: Icon(Icons.close_rounded, size: 16, color: EmberColors.brasaTexto),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 8),
+                ],
+
+                RetroButton(
+                  onPressed: () => _showAddSheet(context),
+                  color: EmberColors.sol,
+                  expand: true,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.person_add_rounded, size: 18),
+                      SizedBox(width: 6),
+                      Text('Adicionar pessoa'),
+                    ],
+                  ),
+                ),
+
+                contactsAsync.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (contacts) {
+                    if (contacts.isEmpty) return const SizedBox.shrink();
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: RetroButton(
+                        onPressed: () => _showContactsSheet(context, contacts),
+                        color: p.superficie,
+                        expand: true,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.contacts_rounded, size: 18, color: p.texto),
+                            const SizedBox(width: 6),
+                            Text('Buscar nos contatos', style: TextStyle(color: p.texto)),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+          Text(
+            'Pule se preferir que qualquer pessoa entre pelo link.',
+            style: EmberText.body(13, color: tokens.textSecondary),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// STEP 4: Regras
+// ---------------------------------------------------------------------------
+
+class _StepRegras extends StatelessWidget {
+  const _StepRegras({
+    required this.votosVisiveis,
+    required this.essencialVisivel,
+    required this.quorumMinimo,
+    required this.semRespostaContaComo,
+    required this.hasEssenciais,
+    required this.onVotosVisiveisChanged,
+    required this.onEssencialVisivelChanged,
+    required this.onQuorumChanged,
+    required this.onSemRespostaChanged,
+  });
+
+  final bool votosVisiveis;
+  final bool essencialVisivel;
+  final int quorumMinimo;
+  final String semRespostaContaComo;
+  final bool hasEssenciais;
+  final ValueChanged<bool> onVotosVisiveisChanged;
+  final ValueChanged<bool> onEssencialVisivelChanged;
+  final ValueChanged<int> onQuorumChanged;
+  final ValueChanged<String> onSemRespostaChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = RetroTokens.of(context);
+    final p = RetroPalette.of(context);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          RetroCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('REGRAS DO ROLÊ', style: EmberText.mono(10, color: tokens.textSecondary)),
+                const SizedBox(height: 10),
+                Text(
+                  'Configure como a votação vai funcionar.',
+                  style: EmberText.body(14, color: tokens.textSecondary),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Votos visíveis
+          _RuleCard(
+            icon: Icons.visibility_rounded,
+            title: 'Votos visíveis',
+            description: 'A galera pode ver os votos dos outros?',
+            trailing: _RetroToggle(
+              value: votosVisiveis,
+              onChanged: onVotosVisiveisChanged,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Essencial visível
+          if (hasEssenciais) ...[
+            _RuleCard(
+              icon: Icons.local_fire_department_rounded,
+              title: 'Mostrar essenciais',
+              description: 'Convidados veem quem é essencial?',
+              trailing: _RetroToggle(
+                value: essencialVisivel,
+                onChanged: onEssencialVisivelChanged,
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+
+          // Quórum
+          _RuleCard(
+            icon: Icons.group_rounded,
+            title: 'Quórum mínimo',
+            description: 'Mínimo de votos pra fechar',
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RetroButton.icon(
+                  onPressed: quorumMinimo > 0
+                      ? () => onQuorumChanged(quorumMinimo - 1)
+                      : null,
+                  semanticLabel: 'Diminuir',
+                  icon: const Icon(Icons.remove_rounded, size: 16),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text(
+                    quorumMinimo == 0 ? 'Sem' : '$quorumMinimo',
+                    style: EmberText.display(18),
+                  ),
+                ),
+                RetroButton.icon(
+                  onPressed: () => onQuorumChanged(quorumMinimo + 1),
+                  semanticLabel: 'Aumentar',
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Sem resposta
+          RetroCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.hourglass_empty_rounded, size: 20, color: p.textoSecundario),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text('Quem não votar conta como...',
+                          style: EmberText.body(14, weight: FontWeight.w600)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: RetroButton(
+                        height: 42,
+                        onPressed: () => onSemRespostaChanged('nada'),
+                        color: semRespostaContaComo == 'nada'
+                            ? EmberColors.sol
+                            : p.superficie,
+                        foregroundColor: semRespostaContaComo == 'nada'
+                            ? EmberColors.tinta
+                            : p.texto,
+                        child: const Text('Nada'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: RetroButton(
+                        height: 42,
+                        onPressed: () => onSemRespostaChanged('nao_posso'),
+                        color: semRespostaContaComo == 'nao_posso'
+                            ? EmberColors.sol
+                            : p.superficie,
+                        foregroundColor: semRespostaContaComo == 'nao_posso'
+                            ? EmberColors.tinta
+                            : p.texto,
+                        child: const Text('Não posso'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RuleCard extends StatelessWidget {
+  const _RuleCard({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.trailing,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final Widget trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = RetroPalette.of(context);
+    return RetroCard(
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: p.textoSecundario),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: EmberText.body(14, weight: FontWeight.w600)),
+                Text(description, style: EmberText.body(12, color: p.textoSecundario)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          trailing,
+        ],
+      ),
+    );
+  }
+}
+
+class _RetroToggle extends StatelessWidget {
+  const _RetroToggle({required this.value, required this.onChanged});
+
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = RetroPalette.of(context);
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 52,
+        height: 30,
+        padding: const EdgeInsets.all(3),
+        decoration: BoxDecoration(
+          color: value ? EmberColors.menta : p.superficie,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: p.contorno, width: 2.5),
+        ),
+        alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          width: 20,
+          height: 20,
+          decoration: BoxDecoration(
+            color: value ? EmberColors.tinta : p.textoSecundario,
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bottom sheet: adicionar pessoa
+// ---------------------------------------------------------------------------
+
+class _AddPersonSheet extends StatefulWidget {
+  const _AddPersonSheet();
+
+  @override
+  State<_AddPersonSheet> createState() => _AddPersonSheetState();
+}
+
+class _AddPersonSheetState extends State<_AddPersonSheet> {
+  final _nomeController = TextEditingController();
+  ConnectionType _tipo = ConnectionType.amigos;
+  bool _essencial = false;
+
+  @override
+  void dispose() {
+    _nomeController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final nome = _nomeController.text.trim();
+    if (nome.isEmpty) return;
+    Navigator.pop(
+      context,
+      InvitedPerson(nome: nome, essencial: _essencial, tipo: _tipo),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = RetroPalette.of(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: p.tela,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border(
+          top: BorderSide(color: p.contorno, width: 3),
+          left: BorderSide(color: p.contorno, width: 3),
+          right: BorderSide(color: p.contorno, width: 3),
+        ),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: p.textoSecundario.withAlpha(80),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            Text('Adicionar pessoa', style: EmberText.display(20)),
+            const SizedBox(height: 16),
+
+            const RetroFieldLabel('Nome'),
+            TextField(
+              controller: _nomeController,
+              textCapitalization: TextCapitalization.words,
+              maxLength: 30,
+              autofocus: true,
+              decoration: const InputDecoration(hintText: 'Ex: Maria'),
+              onSubmitted: (_) => _submit(),
+            ),
+            const SizedBox(height: 14),
+
+            const RetroFieldLabel('Relação'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: ConnectionType.values.map((t) {
+                final isActive = _tipo == t;
+                final label = _StepConvidados._tipoLabels[t] ?? t.name;
+                return RetroButton(
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  onPressed: () => setState(() => _tipo = t),
+                  color: isActive ? EmberColors.sol : p.superficie,
+                  foregroundColor: isActive ? EmberColors.tinta : p.texto,
+                  child: Text(label, style: const TextStyle(fontSize: 13)),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 14),
+
+            GestureDetector(
+              onTap: () => setState(() => _essencial = !_essencial),
+              child: RetroCard(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.local_fire_department_rounded,
+                      color: _essencial ? EmberColors.brasa : p.textoSecundario,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Pessoa essencial',
+                        style: EmberText.body(14, weight: FontWeight.w600),
+                      ),
+                    ),
+                    _RetroToggle(
+                      value: _essencial,
+                      onChanged: (v) => setState(() => _essencial = v),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            RetroButton(
+              onPressed: _nomeController.text.trim().isNotEmpty ? _submit : null,
+              color: EmberColors.sol,
+              expand: true,
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.check_rounded, size: 18),
+                  SizedBox(width: 6),
+                  Text('Adicionar'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bottom sheet: escolher contato salvo
+// ---------------------------------------------------------------------------
+
+class _PickContactSheet extends StatelessWidget {
+  const _PickContactSheet({required this.contacts});
+  final List<Contact> contacts;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = RetroPalette.of(context);
+
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.6,
+      ),
+      decoration: BoxDecoration(
+        color: p.tela,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border(
+          top: BorderSide(color: p.contorno, width: 3),
+          left: BorderSide(color: p.contorno, width: 3),
+          right: BorderSide(color: p.contorno, width: 3),
+        ),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).padding.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+            child: Column(
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: p.textoSecundario.withAlpha(80),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Text('Seus contatos', style: EmberText.display(20)),
+              ],
+            ),
+          ),
+          Flexible(
+            child: ListView.builder(
+              shrinkWrap: true,
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              itemCount: contacts.length,
+              itemBuilder: (_, i) {
+                final c = contacts[i];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: RetroCard(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    child: InkWell(
+                      onTap: () => Navigator.pop(context, c),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(c.nome, style: EmberText.body(15, weight: FontWeight.w600)),
+                          ),
+                          RetroTag(
+                            _StepConvidados._tipoLabels[c.tipo] ?? 'Outro',
+                            color: _StepConvidados._tipoCores[c.tipo] ?? EmberColors.neblina,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

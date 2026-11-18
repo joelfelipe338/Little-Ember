@@ -191,8 +191,19 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
     final members = ref.watch(planMembersProvider(plan.id)).valueOrNull ?? const <PlanMember>[];
     final me = ref.watch(myMemberProvider(plan.id)).valueOrNull;
 
-    final ranking = rankOptions(options, votes);
-    final hasClearLeader = ranking.isNotEmpty && ranking.first.total > 0 &&
+    final essentialIds = {
+      for (final m in members) if (m.essencial) m.id,
+    };
+    final ranking = rankOptions(
+      options,
+      votes,
+      essentialMemberIds: essentialIds,
+      semRespostaContaComo: plan.semRespostaContaComo,
+      totalMembers: members.length,
+    );
+    final hasClearLeader = ranking.isNotEmpty &&
+        ranking.first.total > 0 &&
+        !ranking.first.eliminated &&
         (ranking.length < 2 || ranking.first.score > ranking[1].score);
     final leader = hasClearLeader ? ranking.first : null;
     final tallyById = {for (final t in ranking) t.option.id!: t};
