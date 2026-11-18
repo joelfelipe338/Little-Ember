@@ -36,7 +36,6 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
   bool _votosVisiveis = true;
   bool _essencialVisivel = false;
   int _quorumMinimo = 0;
-  String _semRespostaContaComo = 'nada';
 
   // Step 4: Revisão + Prazo
   DateTime _prazoVotacao = DateTime.now().add(const Duration(days: 3));
@@ -230,7 +229,6 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
             convidados: _convidados,
             votosVisiveis: _votosVisiveis,
             quorumMinimo: _quorumMinimo,
-            semRespostaContaComo: _semRespostaContaComo,
             essencialVisivel: _essencialVisivel,
           );
 
@@ -327,7 +325,6 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
                   votosVisiveis: _votosVisiveis,
                   essencialVisivel: _essencialVisivel,
                   quorumMinimo: _quorumMinimo,
-                  semRespostaContaComo: _semRespostaContaComo,
                   hasEssenciais: _convidados.any((c) => c.essencial),
                   onVotosVisiveisChanged: (v) =>
                       setState(() => _votosVisiveis = v),
@@ -335,8 +332,6 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
                       setState(() => _essencialVisivel = v),
                   onQuorumChanged: (v) =>
                       setState(() => _quorumMinimo = v),
-                  onSemRespostaChanged: (v) =>
-                      setState(() => _semRespostaContaComo = v),
                 ),
                 _StepRevisao(
                   titulo: _tituloController.text,
@@ -893,28 +888,23 @@ class _StepRegras extends StatelessWidget {
     required this.votosVisiveis,
     required this.essencialVisivel,
     required this.quorumMinimo,
-    required this.semRespostaContaComo,
     required this.hasEssenciais,
     required this.onVotosVisiveisChanged,
     required this.onEssencialVisivelChanged,
     required this.onQuorumChanged,
-    required this.onSemRespostaChanged,
   });
 
   final bool votosVisiveis;
   final bool essencialVisivel;
   final int quorumMinimo;
-  final String semRespostaContaComo;
   final bool hasEssenciais;
   final ValueChanged<bool> onVotosVisiveisChanged;
   final ValueChanged<bool> onEssencialVisivelChanged;
   final ValueChanged<int> onQuorumChanged;
-  final ValueChanged<String> onSemRespostaChanged;
 
   @override
   Widget build(BuildContext context) {
     final tokens = RetroTokens.of(context);
-    final p = RetroPalette.of(context);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -995,58 +985,6 @@ class _StepRegras extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(height: 10),
-
-          // Sem resposta
-          RetroCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.hourglass_empty_rounded, size: 20, color: p.textoSecundario),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text('Quem não votar conta como...',
-                          style: EmberText.body(14, weight: FontWeight.w600)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: RetroButton(
-                        height: 42,
-                        onPressed: () => onSemRespostaChanged('nada'),
-                        color: semRespostaContaComo == 'nada'
-                            ? EmberColors.sol
-                            : p.superficie,
-                        foregroundColor: semRespostaContaComo == 'nada'
-                            ? EmberColors.tinta
-                            : p.texto,
-                        child: const Text('Nada'),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: RetroButton(
-                        height: 42,
-                        onPressed: () => onSemRespostaChanged('nao_posso'),
-                        color: semRespostaContaComo == 'nao_posso'
-                            ? EmberColors.sol
-                            : p.superficie,
-                        foregroundColor: semRespostaContaComo == 'nao_posso'
-                            ? EmberColors.tinta
-                            : p.texto,
-                        child: const Text('Não posso'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );
