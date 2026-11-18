@@ -20,6 +20,11 @@ class PlanRepository {
     int quorumMinimo = 0,
     String semRespostaContaComo = 'nada',
     bool essencialVisivel = false,
+    bool autoFechar = false,
+    bool permitirSugestoes = false,
+    bool votoAnonimo = false,
+    int limitePosso = 0,
+    int lembreteHoras = 0,
   }) async {
     final planId = const Uuid().v4();
     final slug = planId.substring(0, 8);
@@ -37,6 +42,11 @@ class PlanRepository {
       'quorum_minimo': quorumMinimo,
       'sem_resposta_conta_como': semRespostaContaComo,
       'essencial_visivel': essencialVisivel,
+      'auto_fechar': autoFechar,
+      'permitir_sugestoes': permitirSugestoes,
+      'voto_anonimo': votoAnonimo,
+      'limite_posso': limitePosso,
+      'lembrete_horas': lembreteHoras,
     }).select().single();
 
     await supabase.from('plan_members').insert({

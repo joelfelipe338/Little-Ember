@@ -18,6 +18,11 @@ class Plan {
     this.quorumMinimo = 0,
     this.semRespostaContaComo = 'nada',
     this.essencialVisivel = false,
+    this.autoFechar = false,
+    this.permitirSugestoes = false,
+    this.votoAnonimo = false,
+    this.limitePosso = 0,
+    this.lembreteHoras = 0,
     this.createdAt,
   });
 
@@ -34,6 +39,11 @@ class Plan {
   final int quorumMinimo;
   final String semRespostaContaComo;
   final bool essencialVisivel;
+  final bool autoFechar;
+  final bool permitirSugestoes;
+  final bool votoAnonimo;
+  final int limitePosso;
+  final int lembreteHoras;
   final DateTime? createdAt;
 
   /// A votação ainda aceita votos (status "votando" e prazo no futuro).
@@ -56,6 +66,11 @@ class Plan {
         quorumMinimo: (row['quorum_minimo'] as int?) ?? 0,
         semRespostaContaComo: (row['sem_resposta_conta_como'] as String?) ?? 'nada',
         essencialVisivel: (row['essencial_visivel'] as bool?) ?? false,
+        autoFechar: (row['auto_fechar'] as bool?) ?? false,
+        permitirSugestoes: (row['permitir_sugestoes'] as bool?) ?? false,
+        votoAnonimo: (row['voto_anonimo'] as bool?) ?? false,
+        limitePosso: (row['limite_posso'] as int?) ?? 0,
+        lembreteHoras: (row['lembrete_horas'] as int?) ?? 0,
         createdAt: row['created_at'] != null
             ? DateTime.parse(row['created_at'] as String)
             : null,
