@@ -33,6 +33,7 @@ class PlanDetailScreen extends ConsumerStatefulWidget {
 class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
   Timer? _ticker;
   bool _busy = false;
+  bool _autoClosing = false;
 
   @override
   void initState() {
@@ -217,6 +218,30 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
     TimeOption? finalOption;
     for (final o in options) {
       if (o.id == plan.horarioFinalId) finalOption = o;
+    }
+
+    // Auto-fechar: quando quórum bateu e há líder claro
+    if (plan.autoFechar &&
+        plan.isVotingOpen &&
+        plan.quorumMinimo > 0 &&
+        votedMemberIds.length >= plan.quorumMinimo &&
+        leader != null &&
+        !_autoClosing) {
+      _autoClosing = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          await ref.read(planRepositoryProvider).closePlan(
+                planId: plan.id,
+                timeOptionId: leader.option.id!,
+              );
+          ref.invalidate(myPlansProvider);
+          await _refresh();
+          if (mounted) _snack('Quórum atingido! Rolê fechado automaticamente.');
+        } catch (_) {
+          if (mounted) _snack('Erro ao auto-fechar o rolê.');
+        }
+        _autoClosing = false;
+      });
     }
 
     return ListView(

@@ -36,6 +36,11 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
   bool _votosVisiveis = true;
   bool _essencialVisivel = false;
   int _quorumMinimo = 0;
+  bool _autoFechar = false;
+  bool _permitirSugestoes = false;
+  bool _votoAnonimo = false;
+  int _limitePosso = 0;
+  int _lembreteHoras = 0;
 
   // Step 4: Revisão + Prazo
   DateTime _prazoVotacao = DateTime.now().add(const Duration(days: 3));
@@ -230,6 +235,11 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
             votosVisiveis: _votosVisiveis,
             quorumMinimo: _quorumMinimo,
             essencialVisivel: _essencialVisivel,
+            autoFechar: _autoFechar,
+            permitirSugestoes: _permitirSugestoes,
+            votoAnonimo: _votoAnonimo,
+            limitePosso: _limitePosso,
+            lembreteHoras: _lembreteHoras,
           );
 
       if (_convidados.isNotEmpty) {
@@ -326,12 +336,27 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
                   essencialVisivel: _essencialVisivel,
                   quorumMinimo: _quorumMinimo,
                   hasEssenciais: _convidados.any((c) => c.essencial),
+                  autoFechar: _autoFechar,
+                  permitirSugestoes: _permitirSugestoes,
+                  votoAnonimo: _votoAnonimo,
+                  limitePosso: _limitePosso,
+                  lembreteHoras: _lembreteHoras,
                   onVotosVisiveisChanged: (v) =>
                       setState(() => _votosVisiveis = v),
                   onEssencialVisivelChanged: (v) =>
                       setState(() => _essencialVisivel = v),
                   onQuorumChanged: (v) =>
                       setState(() => _quorumMinimo = v),
+                  onAutoFecharChanged: (v) =>
+                      setState(() => _autoFechar = v),
+                  onPermitirSugestoesChanged: (v) =>
+                      setState(() => _permitirSugestoes = v),
+                  onVotoAnonimoChanged: (v) =>
+                      setState(() => _votoAnonimo = v),
+                  onLimitePossoChanged: (v) =>
+                      setState(() => _limitePosso = v),
+                  onLembreteHorasChanged: (v) =>
+                      setState(() => _lembreteHoras = v),
                 ),
                 _StepRevisao(
                   titulo: _tituloController.text,
@@ -889,18 +914,38 @@ class _StepRegras extends StatelessWidget {
     required this.essencialVisivel,
     required this.quorumMinimo,
     required this.hasEssenciais,
+    required this.autoFechar,
+    required this.permitirSugestoes,
+    required this.votoAnonimo,
+    required this.limitePosso,
+    required this.lembreteHoras,
     required this.onVotosVisiveisChanged,
     required this.onEssencialVisivelChanged,
     required this.onQuorumChanged,
+    required this.onAutoFecharChanged,
+    required this.onPermitirSugestoesChanged,
+    required this.onVotoAnonimoChanged,
+    required this.onLimitePossoChanged,
+    required this.onLembreteHorasChanged,
   });
 
   final bool votosVisiveis;
   final bool essencialVisivel;
   final int quorumMinimo;
   final bool hasEssenciais;
+  final bool autoFechar;
+  final bool permitirSugestoes;
+  final bool votoAnonimo;
+  final int limitePosso;
+  final int lembreteHoras;
   final ValueChanged<bool> onVotosVisiveisChanged;
   final ValueChanged<bool> onEssencialVisivelChanged;
   final ValueChanged<int> onQuorumChanged;
+  final ValueChanged<bool> onAutoFecharChanged;
+  final ValueChanged<bool> onPermitirSugestoesChanged;
+  final ValueChanged<bool> onVotoAnonimoChanged;
+  final ValueChanged<int> onLimitePossoChanged;
+  final ValueChanged<int> onLembreteHorasChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -985,6 +1030,92 @@ class _StepRegras extends StatelessWidget {
             ),
           ),
 
+          // Auto-fechar (só aparece se quórum > 0)
+          if (quorumMinimo > 0) ...[
+            const SizedBox(height: 10),
+            _RuleCard(
+              icon: Icons.lock_clock_rounded,
+              title: 'Auto-fechar',
+              description: 'Fechar votação quando o quórum bater',
+              trailing: _RetroToggle(
+                value: autoFechar,
+                onChanged: onAutoFecharChanged,
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 10),
+
+          // Permitir sugestões
+          _RuleCard(
+            icon: Icons.add_comment_rounded,
+            title: 'Sugestões de horário',
+            description: 'Convidados podem sugerir horários',
+            trailing: _RetroToggle(
+              value: permitirSugestoes,
+              onChanged: onPermitirSugestoesChanged,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Voto anônimo
+          _RuleCard(
+            icon: Icons.visibility_off_rounded,
+            title: 'Voto anônimo',
+            description: 'Ninguém vê quem votou o quê',
+            trailing: _RetroToggle(
+              value: votoAnonimo,
+              onChanged: onVotoAnonimoChanged,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Limite de Posso
+          _RuleCard(
+            icon: Icons.confirmation_number_rounded,
+            title: 'Limite de "Posso"',
+            description: 'Máximo de vezes que pode votar "Posso"',
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RetroButton.icon(
+                  onPressed: limitePosso > 0
+                      ? () => onLimitePossoChanged(limitePosso - 1)
+                      : null,
+                  semanticLabel: 'Diminuir',
+                  icon: const Icon(Icons.remove_rounded, size: 16),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Text(
+                    limitePosso == 0 ? 'Sem' : '$limitePosso',
+                    style: EmberText.display(18),
+                  ),
+                ),
+                RetroButton.icon(
+                  onPressed: () => onLimitePossoChanged(limitePosso + 1),
+                  semanticLabel: 'Aumentar',
+                  icon: const Icon(Icons.add_rounded, size: 16),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Lembrete
+          _RuleCard(
+            icon: Icons.notifications_active_rounded,
+            title: 'Lembrete',
+            description: 'Avisar quem não votou antes do prazo',
+            trailing: _LembreteSelector(
+              value: lembreteHoras,
+              onChanged: onLembreteHorasChanged,
+            ),
+          ),
+
         ],
       ),
     );
@@ -1060,6 +1191,47 @@ class _RetroToggle extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _LembreteSelector extends StatelessWidget {
+  const _LembreteSelector({required this.value, required this.onChanged});
+
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  static const _opcoes = [0, 2, 6, 12, 24];
+
+  String get _label {
+    if (value == 0) return 'Não';
+    return '${value}h';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final idx = _opcoes.indexOf(value).clamp(0, _opcoes.length - 1);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        RetroButton.icon(
+          onPressed: idx > 0 ? () => onChanged(_opcoes[idx - 1]) : null,
+          semanticLabel: 'Diminuir',
+          icon: const Icon(Icons.remove_rounded, size: 16),
+        ),
+        Container(
+          width: 44,
+          alignment: Alignment.center,
+          child: Text(_label, style: EmberText.display(16)),
+        ),
+        RetroButton.icon(
+          onPressed: idx < _opcoes.length - 1
+              ? () => onChanged(_opcoes[idx + 1])
+              : null,
+          semanticLabel: 'Aumentar',
+          icon: const Icon(Icons.add_rounded, size: 16),
+        ),
+      ],
     );
   }
 }

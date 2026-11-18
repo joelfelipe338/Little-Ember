@@ -209,6 +209,8 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
     final votedMemberIds = votes.map((v) => v.memberId).toSet();
     final canVote = plan.isVotingOpen && me != null;
     final votedAll = options.isNotEmpty && options.every((o) => myVotes.containsKey(o.id));
+    final possoCount = myVotes.values.where((d) => d == Disp.posso).length;
+    final possoLimitReached = plan.limitePosso > 0 && possoCount >= plan.limitePosso;
 
     TimeOption? finalOption;
     for (final o in options) {
@@ -285,11 +287,40 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
                         isLeader: showTally && leader != null && leader.option.id == o.id && plan.status == PlanStatus.votando,
                         isFinal: plan.horarioFinalId == o.id,
                         myVote: myVotes[o.id],
-                        onVote: canVote ? (d) => _vote(o, me!, d) : null,
+                        onVote: canVote
+                            ? (d) {
+                                if (d == Disp.posso && possoLimitReached && myVotes[o.id] != Disp.posso) {
+                                  _snack('Limite de ${plan.limitePosso} voto(s) "Posso" atingido.');
+                                  return;
+                                }
+                                _vote(o, me!, d);
+                              }
+                            : null,
                         showTally: showTally,
                       ),
                       const SizedBox(height: 12),
                     ],
+
+                  if (plan.permitirSugestoes && canVote) ...[
+                    const SizedBox(height: 4),
+                    Center(
+                      child: RetroButton(
+                        color: p.superficie,
+                        shape: RetroButtonShape.pill,
+                        height: 40,
+                        onPressed: _suggestTime,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.add_rounded, size: 18),
+                            const SizedBox(width: 6),
+                            Text('Sugerir horário', style: EmberText.body(13, weight: FontWeight.w700)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
                   if (canVote && votedAll) ...[
                     const SizedBox(height: 4),
@@ -302,7 +333,9 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
                     const SizedBox(height: 10),
                     PlanSectionTitle(
                       title: 'Galera',
-                      trailing: '${votedMemberIds.length} DE ${members.length} VOTARAM',
+                      trailing: plan.votoAnonimo
+                          ? '${members.length} PARTICIPANTES'
+                          : '${votedMemberIds.length} DE ${members.length} VOTARAM',
                     ),
                     const SizedBox(height: 10),
                     RetroCard(
@@ -315,7 +348,9 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
                             _MemberChip(
                               member: m,
                               isMe: me != null && m.id == me.id,
-                              voted: votedMemberIds.contains(m.id),
+                              voted: plan.votoAnonimo
+                                  ? false
+                                  : votedMemberIds.contains(m.id),
                             ),
                         ],
                       ),
@@ -338,6 +373,32 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
       if (m.isOrganizador) return m.nome;
     }
     return null;
+  }
+
+  Future<void> _suggestTime() async {
+    final now = DateTime.now();
+    final date = await showDatePicker(
+      context: context,
+      initialDate: now.add(const Duration(days: 1)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 90)),
+    );
+    if (date == null || !mounted) return;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 19, minute: 0),
+    );
+    if (time == null || !mounted) return;
+
+    final dt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    try {
+      await ref.read(planRepositoryProvider).addTimeOption(planId: plan.id, inicio: dt);
+      ref.invalidate(planOptionsProvider(plan.id));
+      _snack('Horário sugerido!');
+    } catch (e) {
+      _snack('Não deu pra sugerir: $e');
+    }
   }
 
   String _fmtOption(TimeOption o) =>

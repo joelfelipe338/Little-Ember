@@ -78,6 +78,13 @@ class PlanRepository {
     return Plan.fromSupabase(planRow);
   }
 
+  Future<void> addTimeOption({required String planId, required DateTime inicio}) async {
+    await supabase.from('time_options').insert({
+      'plan_id': planId,
+      'inicio_utc': inicio.toUtc().toIso8601String(),
+    });
+  }
+
   // ---------------------------------------------------------------- ler
 
   Future<List<Plan>> getMyPlans() async {
