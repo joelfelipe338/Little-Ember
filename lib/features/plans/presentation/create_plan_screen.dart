@@ -116,11 +116,24 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
     bool pickMore = true;
 
     while (pickMore && mounted) {
+      final existingDays = _timeOptions
+          .map((o) => DateUtils.dateOnly(o.inicioUtc))
+          .toSet();
+
+      var initialDate = DateUtils.dateOnly(now.add(const Duration(days: 1)));
+      final lastDate = now.add(const Duration(days: 365));
+      while (existingDays.contains(initialDate) &&
+          initialDate.isBefore(lastDate)) {
+        initialDate = initialDate.add(const Duration(days: 1));
+      }
+
       final date = await showDatePicker(
         context: context,
-        initialDate: now.add(const Duration(days: 1)),
+        initialDate: initialDate,
         firstDate: now,
-        lastDate: now.add(const Duration(days: 365)),
+        lastDate: lastDate,
+        selectableDayPredicate: (d) =>
+            !existingDays.contains(DateUtils.dateOnly(d)),
       );
       if (date == null || !mounted) return;
 
@@ -143,6 +156,47 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
 
       pickMore = result.anotherDay;
     }
+  }
+
+  Future<void> _addTimeToDay(DateTime day) async {
+    final time = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 19, minute: 0),
+    );
+    if (time == null || !mounted) return;
+
+    final dt = DateTime(day.year, day.month, day.day, time.hour, time.minute);
+
+    if (!dt.isAfter(DateTime.now())) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Esse horário já passou.')),
+        );
+      }
+      return;
+    }
+
+    if (_timeOptions.any((o) => o.inicioUtc == dt)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Esse horário já está na lista.')),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _timeOptions.add(TimeOption(inicioUtc: dt));
+      _timeOptions.sort((a, b) => a.inicioUtc.compareTo(b.inicioUtc));
+    });
+  }
+
+  void _removeDay(DateTime day) {
+    setState(() {
+      _timeOptions.removeWhere(
+        (o) => DateUtils.dateOnly(o.inicioUtc) == day,
+      );
+    });
   }
 
   Future<void> _pickPrazo() async {
@@ -254,8 +308,10 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
                 _StepTitulo(controller: _tituloController),
                 _StepHorarios(
                   timeOptions: _timeOptions,
-                  onAdd: _addTimeOptions,
+                  onAddDay: _addTimeOptions,
+                  onAddTimeToDay: _addTimeToDay,
                   onRemove: (i) => setState(() => _timeOptions.removeAt(i)),
+                  onRemoveDay: _removeDay,
                 ),
                 _StepConvidados(
                   convidados: _convidados,
@@ -364,19 +420,31 @@ class _StepTitulo extends StatelessWidget {
 class _StepHorarios extends StatelessWidget {
   const _StepHorarios({
     required this.timeOptions,
-    required this.onAdd,
+    required this.onAddDay,
+    required this.onAddTimeToDay,
     required this.onRemove,
+    required this.onRemoveDay,
   });
 
   final List<TimeOption> timeOptions;
-  final VoidCallback onAdd;
+  final VoidCallback onAddDay;
+  final ValueChanged<DateTime> onAddTimeToDay;
   final ValueChanged<int> onRemove;
+  final ValueChanged<DateTime> onRemoveDay;
 
   @override
   Widget build(BuildContext context) {
     final tokens = RetroTokens.of(context);
-    final dateFormat = DateFormat("EEE, d 'de' MMM", 'pt_BR');
+    final p = RetroPalette.of(context);
+    final dateFormat = DateFormat("EEEE, d 'de' MMM", 'pt_BR');
     final timeFormat = DateFormat('HH:mm', 'pt_BR');
+
+    final grouped = <DateTime, List<({TimeOption opt, int index})>>{};
+    for (var i = 0; i < timeOptions.length; i++) {
+      final day = DateUtils.dateOnly(timeOptions[i].inicioUtc);
+      grouped.putIfAbsent(day, () => []).add((opt: timeOptions[i], index: i));
+    }
+    final sortedDays = grouped.keys.toList()..sort();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -387,65 +455,93 @@ class _StepHorarios extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('OPÇÕES DE HORÁRIO', style: EmberText.mono(10, color: tokens.textSecondary)),
+                Text('OPÇÕES DE HORÁRIO',
+                    style: EmberText.mono(10, color: tokens.textSecondary)),
                 const SizedBox(height: 10),
                 Text(
-                  'Adicione datas e horários para a galera votar.',
+                  'Adicione dias e horários para a galera votar.',
                   style: EmberText.body(14, color: tokens.textSecondary),
                 ),
-                const SizedBox(height: 14),
-                if (timeOptions.isNotEmpty) ...[
-                  ...List.generate(timeOptions.length, (i) {
-                    final opt = timeOptions[i];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: RetroCard(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        child: Row(
-                          children: [
-                            Icon(Icons.calendar_today_rounded, size: 18, color: tokens.textSecondary),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    dateFormat.format(opt.inicioUtc),
-                                    style: EmberText.body(15, color: tokens.textPrimary, weight: FontWeight.w600),
-                                  ),
-                                  Text(
-                                    timeFormat.format(opt.inicioUtc),
-                                    style: EmberText.body(13, color: tokens.textSecondary),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            RetroButton.icon(
-                              onPressed: () => onRemove(i),
-                              semanticLabel: 'Remover opção',
-                              color: EmberColors.brasa.withAlpha(30),
-                              icon: Icon(Icons.close_rounded, size: 16, color: EmberColors.brasaTexto),
-                            ),
-                          ],
+              ],
+            ),
+          ),
+
+          if (sortedDays.isNotEmpty) const SizedBox(height: 14),
+
+          for (final day in sortedDays) ...[
+            RetroCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today_rounded,
+                          size: 18, color: EmberColors.sol),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          dateFormat.format(day),
+                          style: EmberText.body(15, weight: FontWeight.w700),
                         ),
                       ),
-                    );
-                  }),
-                  const SizedBox(height: 8),
-                ],
-                RetroButton(
-                  onPressed: onAdd,
-                  color: EmberColors.sol,
-                  expand: true,
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add_rounded, size: 18),
-                      SizedBox(width: 6),
-                      Text('Adicionar horário'),
+                      RetroButton.icon(
+                        onPressed: () => onAddTimeToDay(day),
+                        semanticLabel: 'Adicionar horário',
+                        icon: const Icon(Icons.add_rounded, size: 16),
+                      ),
+                      const SizedBox(width: 6),
+                      RetroButton.icon(
+                        onPressed: () => onRemoveDay(day),
+                        semanticLabel: 'Remover dia',
+                        color: EmberColors.brasa.withAlpha(30),
+                        icon: Icon(Icons.delete_outline_rounded,
+                            size: 16, color: EmberColors.brasaTexto),
+                      ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 10),
+                  for (final entry in grouped[day]!)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 28),
+                          Icon(Icons.schedule_rounded,
+                              size: 16, color: p.textoSecundario),
+                          const SizedBox(width: 8),
+                          Text(
+                            timeFormat.format(entry.opt.inicioUtc),
+                            style: EmberText.body(15, weight: FontWeight.w600),
+                          ),
+                          const Spacer(),
+                          RetroButton.icon(
+                            onPressed: () => onRemove(entry.index),
+                            semanticLabel: 'Remover horário',
+                            color: EmberColors.brasa.withAlpha(30),
+                            icon: Icon(Icons.close_rounded,
+                                size: 14, color: EmberColors.brasaTexto),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+
+          if (sortedDays.isNotEmpty) const SizedBox(height: 4),
+
+          RetroButton(
+            onPressed: onAddDay,
+            color: EmberColors.sol,
+            expand: true,
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add_rounded, size: 18),
+                SizedBox(width: 6),
+                Text('Adicionar dia'),
               ],
             ),
           ),
@@ -1079,7 +1175,7 @@ class _AddPersonSheetState extends State<_AddPersonSheet> {
         bottom: MediaQuery.of(context).viewInsets.bottom +
             MediaQuery.of(context).padding.bottom,
       ),
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
