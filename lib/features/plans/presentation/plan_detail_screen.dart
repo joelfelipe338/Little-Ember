@@ -71,6 +71,7 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
   Future<void> _vote(TimeOption option, PlanMember me, Disp disp) async {
     try {
       await ref.read(planRepositoryProvider).vote(timeOptionId: option.id!, memberId: me.id, disp: disp);
+      ref.invalidate(planVotesProvider(widget.planId));
     } catch (e) {
       if (mounted) _snack('Não deu pra salvar o voto. Tenta de novo.');
     }
@@ -191,7 +192,9 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
     final me = ref.watch(myMemberProvider(plan.id)).valueOrNull;
 
     final ranking = rankOptions(options, votes);
-    final leader = ranking.isNotEmpty && ranking.first.total > 0 ? ranking.first : null;
+    final hasClearLeader = ranking.isNotEmpty && ranking.first.total > 0 &&
+        (ranking.length < 2 || ranking.first.score > ranking[1].score);
+    final leader = hasClearLeader ? ranking.first : null;
     final tallyById = {for (final t in ranking) t.option.id!: t};
     final myVotes = {
       for (final v in votes)

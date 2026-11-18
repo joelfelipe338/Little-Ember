@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/constants.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../../shared/widgets/ember_button.dart';
 import '../../../shared/widgets/retro_top_bar.dart';
@@ -21,12 +22,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late TextEditingController _nomeController;
   String _fusoSelecionado = 'UTC-3';
 
-  static const _fusos = [
-    'UTC-2',
-    'UTC-3',
-    'UTC-4',
-    'UTC-5',
-  ];
+  static final _fusos = AppConstants.fusos;
 
   @override
   void initState() {
@@ -357,7 +353,7 @@ class _AppVersion extends ConsumerWidget {
     if (version == null) return const SizedBox.shrink();
 
     return Text(
-      'LITTLE EMBER · V$version',
+      'CHAMMA · V$version',
       textAlign: TextAlign.center,
       style: EmberText.mono(10, color: RetroTokens.of(context).textSecondary),
     );

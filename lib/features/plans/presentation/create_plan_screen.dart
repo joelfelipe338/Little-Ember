@@ -97,40 +97,38 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
     }
   }
 
-  Future<void> _addTimeOption() async {
+  Future<void> _addTimeOptions() async {
     final now = DateTime.now();
-    final date = await showDatePicker(
-      context: context,
-      initialDate: now.add(const Duration(days: 1)),
-      firstDate: now,
-      lastDate: now.add(const Duration(days: 365)),
-    );
-    if (date == null || !mounted) return;
+    bool pickMore = true;
 
-    final time = await showTimePicker(
-      context: context,
-      initialTime: const TimeOfDay(hour: 19, minute: 0),
-    );
-    if (time == null || !mounted) return;
+    while (pickMore && mounted) {
+      final date = await showDatePicker(
+        context: context,
+        initialDate: now.add(const Duration(days: 1)),
+        firstDate: now,
+        lastDate: now.add(const Duration(days: 365)),
+      );
+      if (date == null || !mounted) return;
 
-    final picked = DateTime(date.year, date.month, date.day, time.hour, time.minute);
-    if (!picked.isAfter(DateTime.now())) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Esse horário já passou. Escolha um no futuro.')),
+      final result = await showModalBottomSheet<({List<DateTime> times, bool anotherDay})>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _DayTimesSheet(date: date, existingOptions: _timeOptions),
       );
-      return;
+      if (result == null || !mounted) return;
+
+      if (result.times.isNotEmpty) {
+        setState(() {
+          for (final dt in result.times) {
+            _timeOptions.add(TimeOption(inicioUtc: dt));
+          }
+          _timeOptions.sort((a, b) => a.inicioUtc.compareTo(b.inicioUtc));
+        });
+      }
+
+      pickMore = result.anotherDay;
     }
-    if (_timeOptions.any((o) => o.inicioUtc == picked)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Esse horário já está na lista.')),
-      );
-      return;
-    }
-    setState(() {
-      _timeOptions
-        ..add(TimeOption(inicioUtc: picked))
-        ..sort((a, b) => a.inicioUtc.compareTo(b.inicioUtc));
-    });
   }
 
   Future<void> _pickPrazo() async {
@@ -229,7 +227,7 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
                 _StepTitulo(controller: _tituloController),
                 _StepHorarios(
                   timeOptions: _timeOptions,
-                  onAdd: _addTimeOption,
+                  onAdd: _addTimeOptions,
                   onRemove: (i) => setState(() => _timeOptions.removeAt(i)),
                 ),
                 _StepRevisao(
@@ -519,6 +517,197 @@ class _StepRevisao extends StatelessWidget {
               overflow: TextOverflow.ellipsis),
         ),
       ],
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bottom sheet: horários de um dia
+// ---------------------------------------------------------------------------
+
+class _DayTimesSheet extends StatefulWidget {
+  const _DayTimesSheet({required this.date, required this.existingOptions});
+  final DateTime date;
+  final List<TimeOption> existingOptions;
+
+  @override
+  State<_DayTimesSheet> createState() => _DayTimesSheetState();
+}
+
+class _DayTimesSheetState extends State<_DayTimesSheet> {
+  final List<DateTime> _times = [];
+
+  Future<void> _addTime() async {
+    final time = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 19, minute: 0),
+    );
+    if (time == null || !mounted) return;
+
+    final dt = DateTime(
+      widget.date.year, widget.date.month, widget.date.day,
+      time.hour, time.minute,
+    );
+
+    if (!dt.isAfter(DateTime.now())) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Esse horário já passou.')),
+        );
+      }
+      return;
+    }
+
+    final allExisting = [
+      ...widget.existingOptions.map((o) => o.inicioUtc),
+      ..._times,
+    ];
+    if (allExisting.contains(dt)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Esse horário já está na lista.')),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _times.add(dt);
+      _times.sort();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = RetroPalette.of(context);
+    final dateLabel = DateFormat("EEEE, d 'de' MMM", 'pt_BR').format(widget.date);
+    final timeFmt = DateFormat('HH:mm');
+
+    return Container(
+      decoration: BoxDecoration(
+        color: p.tela,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: Border(
+          top: BorderSide(color: p.contorno, width: 3),
+          left: BorderSide(color: p.contorno, width: 3),
+          right: BorderSide(color: p.contorno, width: 3),
+        ),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom +
+            MediaQuery.of(context).padding.bottom,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: p.textoSecundario.withAlpha(80),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+
+            Row(
+              children: [
+                const Icon(Icons.calendar_today_rounded, size: 18, color: EmberColors.sol),
+                const SizedBox(width: 10),
+                Expanded(child: Text(dateLabel, style: EmberText.display(20))),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            if (_times.isNotEmpty) ...[
+              for (var i = 0; i < _times.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: RetroCard(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    child: Row(
+                      children: [
+                        Icon(Icons.schedule_rounded, size: 18, color: p.textoSecundario),
+                        const SizedBox(width: 10),
+                        Text(timeFmt.format(_times[i]),
+                            style: EmberText.body(16, weight: FontWeight.w700)),
+                        const Spacer(),
+                        RetroButton.icon(
+                          onPressed: () => setState(() => _times.removeAt(i)),
+                          semanticLabel: 'Remover',
+                          color: EmberColors.brasa.withAlpha(30),
+                          icon: Icon(Icons.close_rounded, size: 16, color: EmberColors.brasaTexto),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 4),
+            ],
+
+            RetroButton(
+              onPressed: _addTime,
+              color: EmberColors.sol,
+              expand: true,
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add_rounded, size: 18),
+                  SizedBox(width: 6),
+                  Text('Adicionar horário'),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            Row(
+              children: [
+                Expanded(
+                  child: RetroButton(
+                    onPressed: () => Navigator.pop(
+                      context,
+                      (times: _times, anotherDay: true),
+                    ),
+                    color: p.superficie,
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.calendar_month_rounded, size: 18),
+                        SizedBox(width: 6),
+                        Text('Outro dia'),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: RetroButton(
+                    onPressed: () => Navigator.pop(
+                      context,
+                      (times: _times, anotherDay: false),
+                    ),
+                    color: EmberColors.sol,
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.check_rounded, size: 18),
+                        SizedBox(width: 6),
+                        Text('Concluir'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/constants.dart';
 import '../../../shared/widgets/ember_button.dart';
 import '../../../shared/widgets/retro_top_bar.dart';
 import '../../../theme/ember_retro_theme.dart';
@@ -22,6 +23,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   bool _obscurePassword = true;
   String? _errorMessage;
   bool _success = false;
+  late String _fusoSelecionado;
+
+  @override
+  void initState() {
+    super.initState();
+    _fusoSelecionado = AppConstants.detectFuso();
+  }
 
   @override
   void dispose() {
@@ -45,6 +53,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         email: _emailController.text.trim(),
         password: _passwordController.text,
         nome: _nomeController.text.trim(),
+        fuso: _fusoSelecionado,
       );
       if (mounted) {
         setState(() => _success = true);
@@ -69,7 +78,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     if (msg.contains('network')) {
       return 'Sem conexão. Verifique sua internet.';
     }
-    return 'Erro ao criar conta. Tente novamente.';
+    debugPrint('⚠️ Signup error: $e');
+    return 'Erro ao criar conta: $e';
   }
 
   void _back() {
@@ -203,6 +213,18 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                 if (v == null || v.isEmpty) return 'Digite uma senha';
                 if (v.length < 6) return 'Mínimo 6 caracteres';
                 return null;
+              },
+            ),
+            const SizedBox(height: 14),
+            const RetroFieldLabel('Fuso horário'),
+            DropdownButtonFormField<String>(
+              initialValue: _fusoSelecionado,
+              isExpanded: true,
+              items: AppConstants.fusos
+                  .map((f) => DropdownMenuItem(value: f, child: Text(f)))
+                  .toList(),
+              onChanged: (v) {
+                if (v != null) setState(() => _fusoSelecionado = v);
               },
             ),
             if (_errorMessage != null) ...[

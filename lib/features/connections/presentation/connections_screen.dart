@@ -19,7 +19,7 @@ class ConnectionsScreen extends ConsumerWidget {
       body: RetroEmptyState(
         illustration: const Icon(Icons.diversity_3_rounded, size: 72, color: EmberColors.lavanda),
         title: 'Suas conexões',
-        message: 'Amigos, casal, família, trabalho... cada conexão tem uma brasa. Mantenha ela acesa!',
+        message: 'Amigos, casal, família, trabalho...',
         action: EmberButton(
           label: 'Nova conexão',
           icon: Icons.group_add_rounded,

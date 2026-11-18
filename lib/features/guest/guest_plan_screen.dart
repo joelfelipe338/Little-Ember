@@ -59,7 +59,6 @@ class _GuestPlanScreenState extends ConsumerState<GuestPlanScreen> {
 
     return RetroScaffold(
       top: const RetroTopBar(left: AppConstants.appName),
-      ticker: 'VOCÊ FOI CHAMADO PRO ROLÊ • VOTE SEM INSTALAR NADA • ',
       panelPadding: EdgeInsets.zero,
       body: planAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -133,8 +132,9 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
       ref.invalidate(myMemberProvider(plan.id));
       await ref.read(myMemberProvider(plan.id).future);
     } catch (e) {
+      debugPrint('⚠️ Join error: $e');
       if (mounted) {
-        setState(() => _joinError = 'Não deu pra entrar no rolê. Tenta de novo em instantes.');
+        setState(() => _joinError = 'Não deu pra entrar no rolê: $e');
       }
     } finally {
       if (mounted) setState(() => _joining = false);
@@ -145,6 +145,7 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
     setState(() => _pending[option.id!] = disp);
     try {
       await ref.read(planRepositoryProvider).vote(timeOptionId: option.id!, memberId: me.id, disp: disp);
+      ref.invalidate(planVotesProvider(plan.id));
     } catch (_) {
       if (mounted) {
         setState(() => _pending.remove(option.id));
@@ -163,7 +164,9 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
     final me = meAsync.valueOrNull;
 
     final ranking = rankOptions(options, votes);
-    final leader = ranking.isNotEmpty && ranking.first.total > 0 ? ranking.first : null;
+    final hasClearLeader = ranking.isNotEmpty && ranking.first.total > 0 &&
+        (ranking.length < 2 || ranking.first.score > ranking[1].score);
+    final leader = hasClearLeader ? ranking.first : null;
     final tallyById = {for (final t in ranking) t.option.id!: t};
     final myVotes = <String, Disp>{
       for (final v in votes)

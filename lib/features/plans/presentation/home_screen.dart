@@ -42,7 +42,7 @@ class HomeScreen extends ConsumerWidget {
           if (plans.isEmpty) {
             return RetroEmptyState(
               illustration: const EmberLogo(width: 104),
-              title: 'Nenhuma brasa acesa ainda',
+              title: '',
               message: '${AppConstants.slogan}\nCrie o primeiro rolê e chame a galera.',
               action: EmberButton(
                 label: 'Novo rolê',

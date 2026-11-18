@@ -78,7 +78,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final p = RetroPalette.of(context);
     return RetroScaffold(
       top: const RetroTopBar(left: 'CHAMMA'),
-      ticker: 'CONVIDADOS VOTAM PELO LINK  •  O APP DECIDE POR VOCÊS  •  ${AppConstants.sloganCurto.toUpperCase()}  •',
       panelPadding: EdgeInsets.zero,
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(22, 30, 22, 22),
@@ -105,18 +104,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         bottomLeft: Radius.circular(4),
                       ),
                     ),
-                    child: Text('E aí! Bora acender um rolê?', style: EmberText.mono(13).copyWith(height: 1.4, letterSpacing: 0)),
+                    child: Text('E aí! Bora acender uma Chamma?', style: EmberText.mono(13).copyWith(height: 1.4, letterSpacing: 0)),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Text('Entrar', style: EmberText.display(34)),
-            const SizedBox(height: 4),
-            Text(
-              AppConstants.slogan,
-              style: EmberText.body(15, color: p.textoSecundario),
-            ),
+           
             const SizedBox(height: 22),
 
             Form(

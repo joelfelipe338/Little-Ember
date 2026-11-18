@@ -12,12 +12,19 @@ class AuthRepository {
     required String email,
     required String password,
     required String nome,
+    String fuso = 'UTC-3',
   }) async {
     await supabase.auth.signUp(
       email: email,
       password: password,
-      data: {'full_name': nome},
+      data: {'full_name': nome, 'fuso': fuso},
     );
+    try {
+      final userId = currentUserId;
+      if (userId != null) {
+        await supabase.from('profiles').update({'fuso': fuso}).eq('id', userId);
+      }
+    } catch (_) {}
   }
 
   Future<void> signInWithEmail({
