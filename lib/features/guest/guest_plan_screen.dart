@@ -199,7 +199,7 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
         !ranking.first.eliminated &&
         (ranking.length < 2 || ranking.first.score > ranking[1].score);
     final leader = hasClearLeader ? ranking.first : null;
-    final showTally = plan.votosVisiveis;
+    final showTally = !plan.votoAnonimo;
     final tallyById = {for (final t in ranking) t.option.id!: t};
     final myVotes = <String, Disp>{
       for (final v in votes)
@@ -695,7 +695,7 @@ class _JoinOrClaimSectionState extends ConsumerState<_JoinOrClaimSection> {
   }
 }
 
-class _ClaimCard extends StatelessWidget {
+class _ClaimCard extends StatefulWidget {
   const _ClaimCard({
     required this.unclaimed,
     required this.plan,
@@ -713,6 +713,13 @@ class _ClaimCard extends StatelessWidget {
   final VoidCallback onShowFallback;
 
   @override
+  State<_ClaimCard> createState() => _ClaimCardState();
+}
+
+class _ClaimCardState extends State<_ClaimCard> {
+  PlanMember? _selected;
+
+  @override
   Widget build(BuildContext context) {
     final p = RetroPalette.of(context);
 
@@ -724,27 +731,99 @@ class _ClaimCard extends StatelessWidget {
           Text('Quem é você?', style: EmberText.display(22)),
           const SizedBox(height: 4),
           Text(
-            'Escolha seu nome na lista pra entrar no rolê.',
+            'Busque seu nome na lista pra entrar no rolê.',
             style: EmberText.body(14, color: p.textoSecundario),
           ),
           const SizedBox(height: 14),
-          for (final member in unclaimed) ...[
-            _ClaimRow(
-              member: member,
-              showEssencial: plan.essencialVisivel,
-              loading: loading,
-              onTap: () => onClaim(member),
+          Autocomplete<PlanMember>(
+            optionsBuilder: (textEditingValue) {
+              final query = textEditingValue.text.toLowerCase();
+              if (query.isEmpty) return widget.unclaimed;
+              return widget.unclaimed.where(
+                (m) => m.nome.toLowerCase().contains(query),
+              );
+            },
+            displayStringForOption: (m) => m.nome,
+            onSelected: (m) => setState(() => _selected = m),
+            fieldViewBuilder: (context, controller, focusNode, onSubmitted) {
+              return TextField(
+                controller: controller,
+                focusNode: focusNode,
+                decoration: InputDecoration(
+                  hintText: 'Digite seu nome...',
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  suffixIcon: controller.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded, size: 18),
+                          onPressed: () {
+                            controller.clear();
+                            setState(() => _selected = null);
+                          },
+                        )
+                      : null,
+                ),
+                onSubmitted: (_) => onSubmitted(),
+              );
+            },
+            optionsViewBuilder: (context, onSelected, options) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 0,
+                  color: p.superficie,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(EmberRetro.raioCard),
+                    side: BorderSide(color: p.contorno, width: 2),
+                  ),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 200),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      itemBuilder: (_, i) {
+                        final m = options.elementAt(i);
+                        return ListTile(
+                          dense: true,
+                          leading: Icon(Icons.person_rounded, size: 20, color: p.textoSecundario),
+                          title: Text(m.nome, style: EmberText.body(15, weight: FontWeight.w600)),
+                          trailing: (widget.plan.essencialVisivel && m.essencial)
+                              ? const Icon(Icons.local_fire_department_rounded, size: 18, color: EmberColors.brasa)
+                              : null,
+                          onTap: () => onSelected(m),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          if (_selected != null) ...[
+            const SizedBox(height: 14),
+            RetroButton(
+              onPressed: widget.loading ? null : () => widget.onClaim(_selected!),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.check_rounded, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    widget.loading ? 'Entrando...' : 'Entrar como ${_selected!.nome}',
+                    style: EmberText.body(14, weight: FontWeight.w700),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
           ],
-          if (error != null) ...[
+          if (widget.error != null) ...[
             const SizedBox(height: 4),
-            RetroErrorBox(error!),
+            RetroErrorBox(widget.error!),
           ],
           const SizedBox(height: 8),
           Center(
             child: TextButton(
-              onPressed: onShowFallback,
+              onPressed: widget.onShowFallback,
               child: Text(
                 'Não estou na lista',
                 style: EmberText.body(14, color: p.textoSecundario),
@@ -752,57 +831,6 @@ class _ClaimCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ClaimRow extends StatelessWidget {
-  const _ClaimRow({
-    required this.member,
-    required this.showEssencial,
-    required this.loading,
-    required this.onTap,
-  });
-
-  final PlanMember member;
-  final bool showEssencial;
-  final bool loading;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = RetroPalette.of(context);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: loading ? null : onTap,
-        borderRadius: BorderRadius.circular(EmberRetro.raioCard),
-        child: RetroCard(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          child: Row(
-            children: [
-              Icon(Icons.person_rounded, size: 20, color: p.textoSecundario),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  member.nome,
-                  style: EmberText.body(15, weight: FontWeight.w700),
-                ),
-              ),
-              if (showEssencial && member.essencial)
-                const Padding(
-                  padding: EdgeInsets.only(right: 6),
-                  child: Icon(
-                    Icons.local_fire_department_rounded,
-                    color: EmberColors.brasa,
-                    size: 18,
-                  ),
-                ),
-              Icon(Icons.arrow_forward_rounded, size: 18, color: p.textoSecundario),
-            ],
-          ),
-        ),
       ),
     );
   }

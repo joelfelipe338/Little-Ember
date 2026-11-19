@@ -33,7 +33,6 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
   final List<InvitedPerson> _convidados = [];
 
   // Step 3: Regras
-  bool _votosVisiveis = true;
   bool _essencialVisivel = false;
   int _quorumMinimo = 0;
   bool _autoFechar = false;
@@ -232,7 +231,7 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
             prazoVotacao: _prazoVotacao,
             timeOptions: _timeOptions,
             convidados: _convidados,
-            votosVisiveis: _votosVisiveis,
+            votosVisiveis: !_votoAnonimo,
             quorumMinimo: _quorumMinimo,
             essencialVisivel: _essencialVisivel,
             autoFechar: _autoFechar,
@@ -332,7 +331,6 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
                   }),
                 ),
                 _StepRegras(
-                  votosVisiveis: _votosVisiveis,
                   essencialVisivel: _essencialVisivel,
                   quorumMinimo: _quorumMinimo,
                   hasEssenciais: _convidados.any((c) => c.essencial),
@@ -341,8 +339,6 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
                   votoAnonimo: _votoAnonimo,
                   limitePosso: _limitePosso,
                   lembreteHoras: _lembreteHoras,
-                  onVotosVisiveisChanged: (v) =>
-                      setState(() => _votosVisiveis = v),
                   onEssencialVisivelChanged: (v) =>
                       setState(() => _essencialVisivel = v),
                   onQuorumChanged: (v) =>
@@ -365,7 +361,7 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
                   prazoError: _prazoError,
                   onPickPrazo: _pickPrazo,
                   convidados: _convidados,
-                  votosVisiveis: _votosVisiveis,
+                  votoAnonimo: _votoAnonimo,
                   quorumMinimo: _quorumMinimo,
                 ),
               ],
@@ -583,7 +579,7 @@ class _StepRevisao extends StatelessWidget {
     required this.prazoError,
     required this.onPickPrazo,
     required this.convidados,
-    required this.votosVisiveis,
+    required this.votoAnonimo,
     required this.quorumMinimo,
   });
 
@@ -593,7 +589,7 @@ class _StepRevisao extends StatelessWidget {
   final String? prazoError;
   final VoidCallback onPickPrazo;
   final List<InvitedPerson> convidados;
-  final bool votosVisiveis;
+  final bool votoAnonimo;
   final int quorumMinimo;
 
   @override
@@ -621,19 +617,27 @@ class _StepRevisao extends StatelessWidget {
                 const SizedBox(height: 14),
                 RetroButton(
                   onPressed: onPickPrazo,
-                  color: tokens.cardBg,
+                  color: EmberColors.sol,
                   expand: true,
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.timer_rounded, size: 18, color: tokens.textPrimary),
+                      const Icon(Icons.timer_rounded, size: 18, color: EmberColors.tinta),
                       const SizedBox(width: 8),
-                      Text(
-                        prazoFormat.format(prazoVotacao),
-                        style: EmberText.body(15, color: tokens.textPrimary, weight: FontWeight.w600),
+                      Expanded(
+                        child: Text(
+                          prazoFormat.format(prazoVotacao),
+                          style: EmberText.body(15, color: EmberColors.tinta, weight: FontWeight.w700),
+                        ),
                       ),
+                      const Icon(Icons.edit_rounded, size: 16, color: EmberColors.tinta),
                     ],
                   ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Toque para alterar a data e hora',
+                  style: EmberText.body(12, color: tokens.textSecondary),
+                  textAlign: TextAlign.center,
                 ),
                 if (prazoError != null) ...[
                   const SizedBox(height: 12),
@@ -668,8 +672,8 @@ class _StepRevisao extends StatelessWidget {
                       '$essenciais', tokens),
                 ],
                 const SizedBox(height: 10),
-                _resumeRow(Icons.visibility_rounded, 'Votos',
-                    votosVisiveis ? 'Visíveis' : 'Ocultos', tokens),
+                _resumeRow(Icons.visibility_off_rounded, 'Votos',
+                    votoAnonimo ? 'Anônimos' : 'Visíveis', tokens),
                 if (quorumMinimo > 0) ...[
                   const SizedBox(height: 10),
                   _resumeRow(Icons.group_rounded, 'Quórum',
@@ -910,7 +914,6 @@ class _StepConvidados extends ConsumerWidget {
 
 class _StepRegras extends StatelessWidget {
   const _StepRegras({
-    required this.votosVisiveis,
     required this.essencialVisivel,
     required this.quorumMinimo,
     required this.hasEssenciais,
@@ -919,7 +922,6 @@ class _StepRegras extends StatelessWidget {
     required this.votoAnonimo,
     required this.limitePosso,
     required this.lembreteHoras,
-    required this.onVotosVisiveisChanged,
     required this.onEssencialVisivelChanged,
     required this.onQuorumChanged,
     required this.onAutoFecharChanged,
@@ -929,7 +931,6 @@ class _StepRegras extends StatelessWidget {
     required this.onLembreteHorasChanged,
   });
 
-  final bool votosVisiveis;
   final bool essencialVisivel;
   final int quorumMinimo;
   final bool hasEssenciais;
@@ -938,7 +939,6 @@ class _StepRegras extends StatelessWidget {
   final bool votoAnonimo;
   final int limitePosso;
   final int lembreteHoras;
-  final ValueChanged<bool> onVotosVisiveisChanged;
   final ValueChanged<bool> onEssencialVisivelChanged;
   final ValueChanged<int> onQuorumChanged;
   final ValueChanged<bool> onAutoFecharChanged;
@@ -971,19 +971,6 @@ class _StepRegras extends StatelessWidget {
           ),
 
           const SizedBox(height: 12),
-
-          // Votos visíveis
-          _RuleCard(
-            icon: Icons.visibility_rounded,
-            title: 'Votos visíveis',
-            description: 'A galera pode ver os votos dos outros?',
-            trailing: _RetroToggle(
-              value: votosVisiveis,
-              onChanged: onVotosVisiveisChanged,
-            ),
-          ),
-
-          const SizedBox(height: 10),
 
           // Essencial visível
           if (hasEssenciais) ...[

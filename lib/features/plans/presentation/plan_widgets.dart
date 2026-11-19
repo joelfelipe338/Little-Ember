@@ -93,8 +93,9 @@ class PlanOptionCard extends StatelessWidget {
     final total = tally.total;
     final isEliminated = tally.eliminated;
 
+    final dimmed = !isEliminated && myVote != null && myVote != Disp.posso;
     return Opacity(
-      opacity: isEliminated ? 0.55 : 1.0,
+      opacity: isEliminated ? 0.55 : (dimmed ? 0.6 : 1.0),
       child: RetroCard(
         padding: const EdgeInsets.all(14),
         color: isFinal ? EmberColors.menta.withAlpha(46) : null,
@@ -124,6 +125,7 @@ class PlanOptionCard extends StatelessWidget {
                 child: total == 0
                     ? null
                     : Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           if (tally.posso > 0) Expanded(flex: tally.posso, child: const ColoredBox(color: EmberColors.menta)),
                           if (tally.talvez > 0) Expanded(flex: tally.talvez, child: const ColoredBox(color: EmberColors.lavanda)),
