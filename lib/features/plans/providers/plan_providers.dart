@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../data/plan_repository.dart';
 import '../domain/plan.dart';
 import '../domain/plan_member.dart';
+import '../domain/plan_overview.dart';
 import '../domain/time_option.dart';
 import '../domain/time_vote.dart';
 
@@ -11,6 +12,13 @@ final planRepositoryProvider = Provider<PlanRepository>((ref) {
 
 final myPlansProvider = FutureProvider<List<Plan>>((ref) {
   return ref.watch(planRepositoryProvider).getMyPlans();
+});
+
+/// Rolês com galera, horários e votos (lista de rolês e números do perfil).
+/// Recarrega junto quando [myPlansProvider] é invalidado.
+final myPlanOverviewsProvider = FutureProvider<List<PlanOverview>>((ref) async {
+  final plans = await ref.watch(myPlansProvider.future);
+  return ref.watch(planRepositoryProvider).getPlanOverviews(plans);
 });
 
 final planProvider = FutureProvider.autoDispose.family<Plan?, String>((ref, planId) {

@@ -1,0 +1,12 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["COLE_AQUI_O_TEAM_ID.com.chamma.app"],
+        "components": [
+          { "/": "/*", "comment": "Qualquer link do chamma.site abre no app (o rolê vem depois do #)." }
+        ]
+      }
+    ]
+  }
+}

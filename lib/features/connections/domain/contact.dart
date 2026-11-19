@@ -10,6 +10,7 @@ class Contact {
     this.tipo = ConnectionType.amigos,
     this.criadoPor,
     this.createdAt,
+    this.linkedUserId,
   });
 
   final String? id;
@@ -17,6 +18,11 @@ class Contact {
   final ConnectionType tipo;
   final String? criadoPor;
   final DateTime? createdAt;
+
+  /// Usuário do app ligado a esta conexão (null = só um nome salvo).
+  final String? linkedUserId;
+
+  bool get isLinked => linkedUserId != null;
 
   factory Contact.fromSupabase(Map<String, dynamic> row) => Contact(
         id: row['id'] as String,
@@ -26,5 +32,6 @@ class Contact {
         createdAt: row['created_at'] != null
             ? DateTime.parse(row['created_at'] as String)
             : null,
+        linkedUserId: row['linked_user_id'] as String?,
       );
 }

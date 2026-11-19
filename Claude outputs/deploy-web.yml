@@ -1,0 +1,54 @@
+name: Deploy Flutter Web to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+
+      # Site no domínio próprio (https://chamma.site), servido na raiz.
+      - run: flutter build web --release --base-href "/"
+
+      # Arquivos que precisam estar na raiz do site:
+      # CNAME (domínio), .nojekyll e .well-known (App Links / Universal Links).
+      - name: Copiar arquivos do domínio
+        run: |
+          cp web/CNAME build/web/CNAME
+          touch build/web/.nojekyll
+          mkdir -p build/web/.well-known
+          cp web/.well-known/assetlinks.json build/web/.well-known/assetlinks.json
+          cp web/.well-known/apple-app-site-association build/web/.well-known/apple-app-site-association
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

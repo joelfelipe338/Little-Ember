@@ -2,15 +2,6 @@
 <html lang="pt-BR">
 <head>
   <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
     This is a placeholder for base href that will be replaced by the value of
     the `--base-href` argument provided to `flutter build`.
   -->
@@ -18,41 +9,318 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A chama que mantém a amizade acesa. Marque rolês em grupo sem enrolação.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="CHAMMA: marque rolês em grupo sem enrolação. Mande um link, a galera vota no horário que dá e o melhor aparece sozinho.">
 
   <!-- Prévia do link no WhatsApp, Telegram, Instagram... -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="CHAMMA">
+  <meta property="og:url" content="https://chamma.site/">
   <meta property="og:title" content="Você foi chamado pro rolê!">
-  <meta property="og:description" content="Vota no melhor horário pelo navegador, sem instalar nada. CHAMMA: a chama que mantém a amizade acesa.">
-  <meta property="og:image" content="https://joelfelipe338.github.io/Little-Ember/og_share.jpg">
+  <meta property="og:description" content="Abre o link, escolhe os horários que dá pra você e pronto. Sem instalar nada.">
+  <meta property="og:image" content="https://chamma.site/og_convite.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:alt" content="CHAMMA: vota no rolê sem instalar nada">
   <meta property="og:locale" content="pt_BR">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Você foi chamado pro rolê!">
   <meta name="twitter:description" content="Vota no melhor horário pelo navegador, sem instalar nada.">
-  <meta name="twitter:image" content="https://joelfelipe338.github.io/Little-Ember/og_share.jpg">
+  <meta name="twitter:image" content="https://chamma.site/og_convite.jpg">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="CHAMMA">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>CHAMMA</title>
+  <title>CHAMMA · Marque o rolê sem enrolação</title>
   <meta name="theme-color" content="#FF5A4E">
   <link rel="manifest" href="manifest.json">
-  <!-- Fundo da moldura enquanto o Flutter carrega (sem tela branca). -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Inter:wght@500;600;700;800&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+
   <style>
-    html, body { margin: 0; height: 100%; background: #FF5A4E; }
-    @media (prefers-color-scheme: dark) { html, body { background: #2A2558; } }
+    /* ---------------------------------------------------------- tokens (Retrô sem pixel) */
+    :root {
+      --moldura: #FF5A4E;
+      --tela: #FFF8F1;
+      --superficie: #FFFFFF;
+      --texto: #1B1A2E;
+      --texto2: #5E5B6E;
+      --contorno: #1B1A2E;
+      --grade: rgba(27, 26, 46, .06);
+      --sol: #FFC43D;
+      --menta: #12B886;
+      --lavanda: #8B7BFF;
+      --tinta: #1B1A2E;
+      --creme: #FFF8F1;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --moldura: #2A2558;
+        --tela: #1B1A2E;
+        --superficie: #2F2E42;
+        --texto: #FFF8F1;
+        --texto2: #B9B6C4;
+        --contorno: #0B0A14;
+        --grade: rgba(255, 255, 255, .05);
+      }
+    }
+
+    html, body { margin: 0; height: 100%; background: var(--moldura); }
+    * { box-sizing: border-box; }
+
+    /* ---------------------------------------------------------- landing */
+    #landing {
+      height: 100vh; height: 100dvh;
+      overflow: hidden;
+      display: flex; flex-direction: column; gap: 10px;
+      padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+      font-family: Inter, system-ui, sans-serif; color: var(--texto);
+    }
+    #landing[hidden] { display: none; }
+
+    .top { display: flex; justify-content: center; flex-shrink: 0; }
+    .plaque {
+      display: flex; align-items: center; height: 44px; padding: 0 4px;
+      background: #1B1A2E; border: 3px solid var(--contorno); border-radius: 999px;
+    }
+    .plaque > div {
+      display: flex; align-items: center; height: 32px; padding: 0 16px 0 4px;
+      border: 2px solid var(--lavanda); border-radius: 999px;
+    }
+    .plaque .em {
+      width: 46px; height: 46px; margin: 0 10px 0 -14px; border-radius: 50%;
+      background: var(--creme); border: 3px solid #1B1A2E;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .plaque .em img { width: 34px; }
+    .plaque span.t { font: 800 16px 'Bricolage Grotesque', sans-serif; letter-spacing: .16em; color: var(--sol); }
+
+    .panel {
+      flex: 1; min-height: 0; position: relative; overflow: hidden;
+      border: 3px solid var(--contorno); border-radius: 20px;
+      background-color: var(--tela);
+      background-image: linear-gradient(var(--grade) 1px, transparent 1px), linear-gradient(90deg, var(--grade) 1px, transparent 1px);
+      background-size: 22px 22px;
+      display: flex; align-items: center; justify-content: center;
+      padding: clamp(14px, 3vh, 36px) clamp(16px, 4vw, 48px);
+    }
+    .content {
+      width: 100%; max-width: 1040px; height: 100%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: clamp(10px, 2.2vh, 22px); text-align: center;
+    }
+    .hero { display: flex; flex-direction: column; align-items: center; gap: clamp(8px, 1.8vh, 16px); }
+
+    .logo-wrap {
+      width: clamp(78px, 16vh, 190px); aspect-ratio: 1; border-radius: 50%;
+      background: var(--superficie); border: 3px solid var(--contorno);
+      box-shadow: 0 6px 0 var(--contorno);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .logo-wrap img { width: 76%; animation: bob 3.4s ease-in-out infinite; }
+    @keyframes bob { 50% { transform: translateY(-5px) rotate(-2deg); } }
+
+    h1 {
+      margin: 0; font: 800 clamp(24px, min(5vh, 8.6vw), 58px)/1.02 'Bricolage Grotesque', sans-serif;
+      letter-spacing: -.03em; max-width: 14em;
+    }
+    h1 mark { background: var(--sol); color: var(--tinta); padding: 0 .18em; border-radius: .2em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+    .sub { margin: 0; font-size: clamp(13.5px, min(2vh, 4vw), 19px); line-height: 1.4; color: var(--texto2); max-width: 34em; }
+
+    .steps { display: flex; gap: 10px; width: 100%; max-width: 640px; }
+    .step {
+      flex: 1; min-width: 0; padding: clamp(8px, 1.4vh, 14px) 10px;
+      background: var(--superficie); border: 3px solid var(--contorno); border-radius: 16px;
+      box-shadow: 0 5px 0 rgba(27, 26, 46, .16);
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+    }
+    .step .n {
+      width: clamp(28px, 4vh, 38px); aspect-ratio: 1; border-radius: 50%; border: 2.5px solid var(--contorno);
+      display: flex; align-items: center; justify-content: center;
+      font: 800 clamp(14px, 2vh, 18px) 'Bricolage Grotesque', sans-serif; color: var(--tinta);
+    }
+    .step b { font-size: clamp(12.5px, 1.8vh, 16px); }
+    .step small { font-size: clamp(11px, 1.5vh, 13px); color: var(--texto2); line-height: 1.25; }
+
+    .ctas { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      height: clamp(46px, 6.4vh, 56px); padding: 0 22px;
+      border: 3px solid var(--contorno); border-radius: 14px;
+      font: 800 clamp(15px, 2vh, 17px) Inter, sans-serif; text-decoration: none; color: var(--tinta);
+      background: var(--sol); cursor: pointer;
+      box-shadow: 0 5px 0 var(--contorno), inset 0 -4px 0 rgba(27, 26, 46, .14), inset 0 3px 0 rgba(255, 255, 255, .55);
+      transition: transform .08s, box-shadow .08s;
+    }
+    .btn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--contorno), inset 0 -4px 0 rgba(27, 26, 46, .14); }
+    .btn:focus-visible { outline: 3px solid var(--lavanda); outline-offset: 3px; }
+    .btn.ghost { background: var(--superficie); color: var(--texto); cursor: default; }
+    .btn.ghost .tag { font: 700 10px 'Space Mono', monospace; background: var(--lavanda); color: var(--tinta); border: 2px solid var(--contorno); border-radius: 999px; padding: 1px 7px; }
+
+    .soon { display: none; margin: 0; font-size: 12.5px; color: var(--texto2); }
+    .soon b { color: var(--texto); }
+    @media (max-width: 599px) {
+      .btn.ghost { display: none; }
+      .soon { display: block; }
+      .btn { width: 100%; max-width: 340px; }
+    }
+
+    /* Cartão de exemplo (só em telas largas). */
+    .demo { display: none; }
+
+    .ticker {
+      height: 38px; flex-shrink: 0; overflow: hidden; display: flex; align-items: center;
+      background: #1B1A2E; border: 3px solid var(--contorno); border-radius: 999px;
+    }
+    .ticker div { display: flex; white-space: nowrap; animation: marquee 26s linear infinite; }
+    .ticker span { padding: 0 22px; font: 700 12px 'Space Mono', monospace; letter-spacing: .06em; color: var(--sol); text-shadow: 0 0 8px rgba(255, 196, 61, .5); }
+    @keyframes marquee { to { transform: translateX(-50%); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .logo-wrap img, .ticker div { animation: none; }
+    }
+
+    /* Telas baixas: corta o que é secundário pra caber sem rolar. */
+    @media (max-height: 640px) {
+      .steps small { display: none; }
+      .ticker { display: none; }
+    }
+    @media (max-height: 540px) {
+      .steps { display: none; }
+      .sub { display: none; }
+    }
+
+    /* Telas largas: duas colunas, com um cartão de votação de exemplo. */
+    @media (min-width: 900px) and (min-height: 560px) {
+      .content { flex-direction: row; text-align: left; gap: clamp(28px, 5vw, 72px); }
+      .hero { align-items: flex-start; flex: 1.1; }
+      .hero .logo-wrap { display: none; }
+      .steps { max-width: none; }
+      .ctas { justify-content: flex-start; }
+      .demo { display: flex; flex-direction: column; align-items: center; gap: 18px; flex: .9; }
+      .demo .logo-wrap { width: clamp(120px, 20vh, 180px); }
+    }
+
+    .card {
+      width: min(360px, 100%); text-align: left;
+      background: var(--superficie); border: 3px solid var(--contorno); border-radius: 18px;
+      box-shadow: 0 6px 0 rgba(27, 26, 46, .16); padding: 14px; transform: rotate(1.5deg);
+    }
+    .card .kicker { font: 700 10px 'Space Mono', monospace; letter-spacing: .05em; color: var(--texto2); }
+    .card h3 { margin: 4px 0 10px; font: 800 22px 'Bricolage Grotesque', sans-serif; letter-spacing: -.02em; }
+    .opt { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 2px solid rgba(127, 127, 127, .18); }
+    .date { width: 44px; border: 2.5px solid var(--contorno); border-radius: 9px; overflow: hidden; text-align: center; flex-shrink: 0; background: var(--superficie); }
+    .date i { display: block; font: 700 9px 'Space Mono', monospace; background: #FF5A4E; color: var(--tinta); border-bottom: 2px solid var(--contorno); font-style: normal; }
+    .date b { display: block; font: 800 18px/1.3 'Bricolage Grotesque', sans-serif; }
+    .opt .h { flex: 1; font-weight: 800; }
+    .opt .h small { display: block; font-weight: 600; font-size: 11.5px; color: var(--texto2); }
+    .pill { font: 700 9.5px 'Space Mono', monospace; padding: 2px 8px; border: 2px solid var(--contorno); border-radius: 999px; color: var(--tinta); }
+
+    /* ---------------------------------------------------------- app Flutter */
+    body.app #landing { display: none; }
   </style>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
+  <!-- Página de apresentação (só no endereço principal, sem rota). -->
+  <main id="landing" hidden>
+    <header class="top">
+      <div class="plaque" role="img" aria-label="CHAMMA">
+        <div><span class="em"><img src="chamma_logo.webp" alt=""></span><span class="t">CHAMMA</span></div>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="content">
+        <div class="hero">
+          <div class="logo-wrap"><img src="chamma_logo.webp" alt="Calendário de óculos escuros com uma chama, o mascote do CHAMMA"></div>
+          <h1>Marca o rolê. A galera vota. <mark>O&nbsp;CHAMMA&nbsp;decide.</mark></h1>
+          <p class="sub">Nada de grupo com 200 mensagens. Você manda um link, cada um marca os horários que dá, e o melhor aparece sozinho.</p>
+
+          <div class="steps" aria-label="Como funciona">
+            <div class="step"><span class="n" style="background:#FFC43D">1</span><b>Crie o rolê</b><small>Nome, horários e local</small></div>
+            <div class="step"><span class="n" style="background:#8B7BFF">2</span><b>Mande o link</b><small>No grupo ou pra cada um</small></div>
+            <div class="step"><span class="n" style="background:#12B886">3</span><b>A galera vota</b><small>Sem instalar nada</small></div>
+          </div>
+
+          <div class="ctas">
+            <a class="btn" id="entrar" href="#/login">Entrar no CHAMMA →</a>
+            <span class="btn ghost" aria-disabled="true">Baixar o app <span class="tag">EM BREVE</span></span>
+          </div>
+          <p class="soon">App pra <b>Android</b> e <b>iPhone</b> chegando em breve.</p>
+        </div>
+
+        <div class="demo" aria-hidden="true">
+          <div class="logo-wrap"><img src="chamma_logo.webp" alt=""></div>
+          <div class="card">
+            <div class="kicker">JOEL TE CHAMOU PRO ROLÊ</div>
+            <h3>Churras de sábado</h3>
+            <div class="opt"><span class="date"><i>SÁB</i><b>22</b></span><span class="h">19:00<small>5 podem · Casa do Rafa</small></span><span class="pill" style="background:#FFC43D">LIDERANDO</span></div>
+            <div class="opt"><span class="date"><i>SEX</i><b>21</b></span><span class="h">19:00<small>3 podem · 2 talvez</small></span><span class="pill" style="background:#12B886;color:#fff">VOCÊ: POSSO</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="ticker" aria-hidden="true">
+      <div>
+        <span>A CHAMA QUE MANTÉM A AMIZADE ACESA • MANDA O LINK • A GALERA VOTA • O MELHOR HORÁRIO GANHA •</span>
+        <span>A CHAMA QUE MANTÉM A AMIZADE ACESA • MANDA O LINK • A GALERA VOTA • O MELHOR HORÁRIO GANHA •</span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Endereço puro (https://chamma.site/) mostra a apresentação.
+    // Qualquer rota do app (#/r/<código>, #/login...) ou quem já tem sessão carrega o app Flutter.
+    (function () {
+      var landing = document.getElementById('landing');
+      var started = false;
+
+      function hasSession() {
+        try {
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i) || '';
+            if (k.indexOf('sb-') === 0 && k.indexOf('-auth-token') > 0) return true;
+          }
+        } catch (e) {}
+        return false;
+      }
+
+      function startApp() {
+        if (started) return;
+        started = true;
+        document.body.classList.add('app');
+        if (landing) landing.remove();
+        var s = document.createElement('script');
+        s.src = 'flutter_bootstrap.js';
+        s.async = true;
+        document.body.appendChild(s);
+      }
+
+      var route = (location.hash || '').replace(/^#/, '');
+      if ((route && route !== '/') || (route === '/' && hasSession())) {
+        startApp();
+        return;
+      }
+
+      landing.hidden = false;
+      document.getElementById('entrar').addEventListener('click', function (e) {
+        e.preventDefault();
+        location.hash = '#/login';
+        startApp();
+      });
+      window.addEventListener('hashchange', function () {
+        var r = (location.hash || '').replace(/^#/, '');
+        if (r && r !== '/') startApp();
+      });
+    })();
+  </script>
 </body>
 </html>

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants.dart';
 import '../../../shared/widgets/ember_button.dart';
 import '../../../shared/widgets/ember_logo.dart';
 import '../../../shared/widgets/retro_top_bar.dart';
@@ -77,7 +76,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final p = RetroPalette.of(context);
     return RetroScaffold(
-      top: const RetroTopBar(left: 'CHAMMA'),
+      top: const RetroTopBar(left: 'BORA', right: 'ENTRAR'),
       panelPadding: EdgeInsets.zero,
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(22, 30, 22, 22),

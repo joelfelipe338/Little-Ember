@@ -23,6 +23,7 @@ class Plan {
     this.votoAnonimo = false,
     this.limitePosso = 0,
     this.lembreteHoras = 0,
+    this.linkAberto = true,
     this.createdAt,
   });
 
@@ -44,6 +45,9 @@ class Plan {
   final bool votoAnonimo;
   final int limitePosso;
   final int lembreteHoras;
+
+  /// Qualquer um com o link entra. Falso: só quem o organizador adicionou.
+  final bool linkAberto;
   final DateTime? createdAt;
 
   /// A votação ainda aceita votos (status "votando" e prazo no futuro).
@@ -71,6 +75,7 @@ class Plan {
         votoAnonimo: (row['voto_anonimo'] as bool?) ?? false,
         limitePosso: (row['limite_posso'] as int?) ?? 0,
         lembreteHoras: (row['lembrete_horas'] as int?) ?? 0,
+        linkAberto: (row['link_aberto'] as bool?) ?? true,
         createdAt: row['created_at'] != null
             ? DateTime.parse(row['created_at'] as String)
             : null,

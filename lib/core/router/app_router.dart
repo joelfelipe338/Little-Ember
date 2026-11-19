@@ -6,6 +6,12 @@ import '../../features/plans/presentation/home_screen.dart';
 import '../../features/plans/presentation/create_plan_screen.dart';
 import '../../features/plans/presentation/plan_detail_screen.dart';
 import '../../features/connections/presentation/connections_screen.dart';
+import '../../features/connections/presentation/select_people_screen.dart';
+import '../../features/plans/domain/invited_person.dart';
+import '../../features/places/domain/place.dart';
+import '../../features/places/presentation/map_picker_screen.dart';
+import '../../features/profile/presentation/edit_profile_screen.dart';
+import '../../features/subscription/presentation/subscription_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/guest/guest_plan_screen.dart';
 import '../../features/splash/splash_screen.dart';
@@ -18,6 +24,10 @@ final appRouter = GoRouter(
   navigatorKey: _rootNavigatorKey,
   initialLocation: '/splash',
   redirect: (context, state) {
+    // Link do site aberto no app: https://chamma.site/#/r/<slug> chega como "/#/r/<slug>".
+    final fragment = state.uri.fragment;
+    if (fragment.startsWith('/r/')) return fragment;
+
     // A splash animada decide sozinha para onde ir quando termina.
     if (state.matchedLocation == '/splash') return null;
     // Página do convidado (link web): pública, com ou sem sessão.
@@ -53,7 +63,38 @@ final appRouter = GoRouter(
     // Criar rolê (tela cheia, sem nav bar)
     GoRoute(
       path: '/create-plan',
-      builder: (context, state) => const CreatePlanScreen(),
+      builder: (context, state) => CreatePlanScreen(
+        // Vem das Conexões com a galera já escolhida.
+        initialConvidados: state.extra is List<InvitedPerson> ? state.extra! as List<InvitedPerson> : const [],
+      ),
+    ),
+
+    // Escolher quem chamar pro rolê (vem das Conexões)
+    GoRoute(
+      path: '/connections/select',
+      builder: (context, state) => SelectPeopleScreen(
+        args: state.extra is SelectPeopleArgs ? state.extra! as SelectPeopleArgs : const SelectPeopleArgs(),
+      ),
+    ),
+
+    // Assinatura (CHAMMA+)
+    GoRoute(
+      path: '/assinatura',
+      builder: (context, state) => const SubscriptionScreen(),
+    ),
+
+    // Escolher o local no mapa (devolve um PlaceDraft com pop)
+    GoRoute(
+      path: '/map-picker',
+      builder: (context, state) => MapPickerScreen(
+        initial: state.extra is PlaceDraft ? state.extra! as PlaceDraft : null,
+      ),
+    ),
+
+    // Editar perfil (tela cheia, sem nav bar)
+    GoRoute(
+      path: '/profile/edit',
+      builder: (context, state) => const EditProfileScreen(),
     ),
 
     // Página do convidado: link compartilhado `/#/r/<slug>`

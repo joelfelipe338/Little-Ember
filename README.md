@@ -6,7 +6,7 @@ A chama que mantém a amizade acesa. App Flutter para marcar rolês em grupo: qu
 
 - Flutter + Riverpod + go_router
 - Supabase (Postgres, Auth, RLS) — migrações em `supabase/migrations/`
-- Web publicada no GitHub Pages (`.github/workflows/deploy-web.yml`)
+- Web em https://chamma.site (GitHub Pages, `.github/workflows/deploy-web.yml`)
 
 ## Rodando
 

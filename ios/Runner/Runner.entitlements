@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Links https://chamma.site abrem no app (Universal Links).
+	     Verificado por https://chamma.site/.well-known/apple-app-site-association -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:chamma.site</string>
+		<string>applinks:www.chamma.site</string>
+	</array>
+</dict>
+</plist>

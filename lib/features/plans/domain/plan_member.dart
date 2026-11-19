@@ -11,6 +11,7 @@ class PlanMember {
     required this.nome,
     this.papel = MemberRole.convidado,
     this.essencial = false,
+    this.connectionId,
     this.createdAt,
   });
 
@@ -20,6 +21,9 @@ class PlanMember {
   final String nome;
   final MemberRole papel;
   final bool essencial;
+
+  /// Conexão do organizador que corresponde a esta pessoa (null = entrou pelo link).
+  final String? connectionId;
   final DateTime? createdAt;
 
   bool get isOrganizador => papel == MemberRole.organizador;
@@ -33,6 +37,7 @@ class PlanMember {
             : 'Sem nome',
         papel: MemberRole.values.byName(row['papel'] as String),
         essencial: (row['essencial'] as bool?) ?? false,
+        connectionId: row['connection_id'] as String?,
         createdAt: row['created_at'] != null ? DateTime.parse(row['created_at'] as String) : null,
       );
 }

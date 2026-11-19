@@ -1,8 +1,10 @@
 import 'package:uuid/uuid.dart';
 import '../../../core/supabase/supabase_client.dart';
+import '../../places/domain/place.dart';
 import '../domain/invited_person.dart';
 import '../domain/plan.dart';
 import '../domain/plan_member.dart';
+import '../domain/plan_overview.dart';
 import '../domain/time_option.dart';
 import '../domain/time_vote.dart';
 
@@ -25,9 +27,24 @@ class PlanRepository {
     bool votoAnonimo = false,
     int limitePosso = 0,
     int lembreteHoras = 0,
+    bool linkAberto = true,
+    PlaceDraft? local,
   }) async {
     final planId = const Uuid().v4();
     final slug = planId.substring(0, 8);
+
+    // Local escolhido no mapa vira um registro em `places`.
+    String? lugarId;
+    if (local != null) {
+      final placeRow = await supabase.from('places').insert({
+        'nome': local.nome,
+        'endereco': local.endereco,
+        'latitude': local.latitude,
+        'longitude': local.longitude,
+        'criado_por': _userId,
+      }).select('id').single();
+      lugarId = placeRow['id'] as String;
+    }
 
     final profile = await supabase.from('profiles').select('nome').eq('id', _userId).maybeSingle();
     final nome = (profile?['nome'] as String?)?.trim();
@@ -37,6 +54,7 @@ class PlanRepository {
       'slug': slug,
       'criador_id': _userId,
       'titulo': titulo,
+      'lugar_final_id': lugarId,
       'prazo_votacao': prazoVotacao.toUtc().toIso8601String(),
       'votos_visiveis': votosVisiveis,
       'quorum_minimo': quorumMinimo,
@@ -47,6 +65,7 @@ class PlanRepository {
       'voto_anonimo': votoAnonimo,
       'limite_posso': limitePosso,
       'lembrete_horas': lembreteHoras,
+      'link_aberto': linkAberto,
     }).select().single();
 
     await supabase.from('plan_members').insert({
@@ -64,6 +83,10 @@ class PlanRepository {
                   'nome_exibicao': c.nome,
                   'papel': 'convidado',
                   'essencial': c.essencial,
+                  // Liga o convidado à conexão (brasa / último rolê juntos).
+                  'connection_id': c.existingContactId,
+                  // Conexão vinculada entra já com a conta da pessoa (o rolê aparece no app dela).
+                  'user_id': c.linkedUserId,
                 })
             .toList(),
       );
@@ -103,6 +126,43 @@ class PlanRepository {
         .order('created_at', ascending: false);
 
     return rows.map(Plan.fromSupabase).toList();
+  }
+
+  /// Junta galera, horários e votos dos rolês pra montar a lista (3 consultas no total).
+  Future<List<PlanOverview>> getPlanOverviews(List<Plan> plans) async {
+    if (plans.isEmpty) return [];
+    final ids = [for (final p in plans) p.id];
+
+    final memberRows = await supabase.from('plan_members').select().inFilter('plan_id', ids).order('created_at');
+    final optionRows = await supabase.from('time_options').select().inFilter('plan_id', ids).order('inicio_utc');
+    final options = optionRows.map(TimeOption.fromSupabase).toList();
+    final optionIds = [for (final o in options) o.id!];
+    final voteRows = optionIds.isEmpty
+        ? const <Map<String, dynamic>>[]
+        : await supabase.from('time_votes').select().inFilter('time_option_id', optionIds);
+
+    final members = memberRows.map(PlanMember.fromSupabase).toList();
+    final votes = voteRows.map(TimeVote.fromSupabase).toList();
+    final optionPlan = {for (final o in options) o.id!: o.planId};
+
+    // Nome do local de cada rolê (pra mostrar na lista).
+    final placeIds = {for (final p in plans) if (p.lugarFinalId != null) p.lugarFinalId!}.toList();
+    final placeRows = placeIds.isEmpty
+        ? const <Map<String, dynamic>>[]
+        : await supabase.from('places').select('id, nome').inFilter('id', placeIds);
+    final placeNames = {for (final r in placeRows) r['id'] as String: r['nome'] as String};
+
+    return [
+      for (final plan in plans)
+        PlanOverview(
+          plan: plan,
+          members: [for (final m in members) if (m.planId == plan.id) m],
+          options: [for (final o in options) if (o.planId == plan.id) o],
+          votes: [for (final v in votes) if (optionPlan[v.timeOptionId] == plan.id) v],
+          myUserId: _userId,
+          placeName: plan.lugarFinalId == null ? null : placeNames[plan.lugarFinalId],
+        ),
+    ];
   }
 
   Future<Plan?> getPlan(String id) async {

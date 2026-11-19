@@ -7,10 +7,16 @@ abstract final class AppConstants {
   static const supabaseAnonKey =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdxa2FjenJyYXVnbndxdHFvbW94Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0Nzk1NTIsImV4cCI6MjEwODA1NTU1Mn0.QLC1WZaMisHGppJmCD9B-FryKkiDUGF8eK8J28dnzv0';
 
-  /// Endereço público do app web (GitHub Pages). O convidado abre `<base>/#/r/<slug>`.
-  /// Se mudar de domínio ou renomear o repositório, troque só aqui.
-  static const webBaseUrl = 'https://joelfelipe338.github.io/Little-Ember';
+  /// Site do CHAMMA (GitHub Pages com domínio próprio). O convidado abre `<base>/#/r/<slug>`.
+  /// No celular com o app instalado, esse mesmo link abre direto no app (App Links / Universal Links).
+  static const webHost = 'chamma.site';
+  static const webBaseUrl = 'https://$webHost';
   static String guestLink(String slug) => '$webBaseUrl/#/r/$slug';
+
+  /// Abre o rolê direto no app instalado (Android/iOS registram o esquema `chamma://`).
+  static const appScheme = 'chamma';
+  static const appHost = 'chamma.app';
+  static String appLink(String slug) => '$appScheme://$appHost/r/$slug';
 
   static const fusos = [
     'UTC-12', 'UTC-11', 'UTC-10', 'UTC-9:30', 'UTC-9', 'UTC-8',
