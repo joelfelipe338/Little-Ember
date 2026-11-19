@@ -216,10 +216,6 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
     }
   }
 
-  Future<void> _addToCalendar(DateTime quando) async {
-    await launchUrl(Uri.parse(calendarLink(plan: plan, inicio: quando)), mode: LaunchMode.externalApplication);
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = RetroPalette.of(context);
@@ -291,7 +287,6 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
           titulo: plan.titulo,
           quando: quando,
           place: place,
-          onCalendar: () => _addToCalendar(quando),
         ),
         const SizedBox(height: 16),
         if (place != null) ...[PlaceCard(place: place), const SizedBox(height: 18)],

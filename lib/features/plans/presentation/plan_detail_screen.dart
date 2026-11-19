@@ -180,14 +180,6 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
     }
   }
 
-  Future<void> _addToCalendar(Plan plan, DateTime quando) async {
-    final ok = await launchUrl(
-      Uri.parse(calendarLink(plan: plan, inicio: quando)),
-      mode: LaunchMode.externalApplication,
-    );
-    if (!ok && mounted) _snack('Não deu pra abrir a agenda.');
-  }
-
   // ---------------------------------------------------------------- build
 
   @override
@@ -318,7 +310,6 @@ class _PlanDetailScreenState extends ConsumerState<PlanDetailScreen> {
               titulo: plan.titulo,
               quando: quando,
               place: place,
-              onCalendar: () => _addToCalendar(plan, quando),
               onShare: () => _share(
                 buildClosedMessage(plan: plan, quando: quando, local: place?.nome, endereco: place?.endereco),
                 plan.titulo,

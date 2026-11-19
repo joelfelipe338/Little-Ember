@@ -382,7 +382,6 @@ class ClosedTicket extends StatelessWidget {
     required this.titulo,
     required this.quando,
     this.place,
-    this.onCalendar,
     this.onShare,
     this.shareLabel = 'Avisar galera',
   });
@@ -390,7 +389,6 @@ class ClosedTicket extends StatelessWidget {
   final String titulo;
   final DateTime quando;
   final Place? place;
-  final VoidCallback? onCalendar;
   final VoidCallback? onShare;
   final String shareLabel;
 
@@ -480,28 +478,10 @@ class ClosedTicket extends StatelessWidget {
             ),
           ),
         ),
-        if (onCalendar != null || onShare != null) ...[
+        if (onShare != null) ...[
           const SizedBox(height: 12),
           Row(
             children: [
-              if (onCalendar != null)
-                Expanded(
-                  child: RetroButton(
-                    onPressed: onCalendar,
-                    height: 44,
-                    color: p.botaoSecundario,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.event_rounded, size: 18),
-                        const SizedBox(width: 6),
-                        Flexible(child: Text('Pôr na agenda', style: EmberText.body(13.5, weight: FontWeight.w800))),
-                      ],
-                    ),
-                  ),
-                ),
-              if (onCalendar != null && onShare != null) const SizedBox(width: 10),
               if (onShare != null)
                 Expanded(
                   child: RetroButton(
