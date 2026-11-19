@@ -9,8 +9,8 @@
 -- =====================================================================
 
 -- ------------------------------------------------------------- código de convite
-create or replace function gerar_codigo_convite() returns text
-language plpgsql volatile as $$
+create or replace function public.gerar_codigo_convite() returns text
+language plpgsql volatile security definer set search_path = public as $$
 declare
   alfabeto text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; -- sem 0/O e 1/I
   codigo text;
@@ -20,7 +20,7 @@ begin
     for i in 1..6 loop
       codigo := codigo || substr(alfabeto, 1 + floor(random() * length(alfabeto))::int, 1);
     end loop;
-    exit when not exists (select 1 from profiles where codigo_convite = codigo);
+    exit when not exists (select 1 from public.profiles where codigo_convite = codigo);
   end loop;
   return codigo;
 end $$;

@@ -212,6 +212,7 @@ class OptionVoteCard extends StatelessWidget {
     this.showTally = true,
     this.big = false,
     this.pending = false,
+    this.totalPessoas = 0,
   });
 
   final TimeOption option;
@@ -233,6 +234,10 @@ class OptionVoteCard extends StatelessWidget {
 
   /// Ainda sem o voto da pessoa (contorno mais forte).
   final bool pending;
+
+  /// Quantas pessoas estão no rolê: a barra mostra a fatia de cada voto
+  /// sobre esse total, e o que sobra fica vazio (quem ainda não votou).
+  final int totalPessoas;
 
   @override
   Widget build(BuildContext context) {
@@ -322,9 +327,9 @@ class OptionVoteCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             header,
-            if (showTally && total > 0) ...[
+            if (showTally && (total > 0 || totalPessoas > 0)) ...[
               const SizedBox(height: 10),
-              _TallyBar(tally: tally),
+              _TallyBar(tally: tally, totalPessoas: totalPessoas),
             ],
             if (big && onVote != null) ...[
               const SizedBox(height: 12),
@@ -338,13 +343,15 @@ class OptionVoteCard extends StatelessWidget {
 }
 
 class _TallyBar extends StatelessWidget {
-  const _TallyBar({required this.tally});
+  const _TallyBar({required this.tally, this.totalPessoas = 0});
 
   final OptionTally tally;
+  final int totalPessoas;
 
   @override
   Widget build(BuildContext context) {
     final p = RetroPalette.of(context);
+    final faltam = totalPessoas - tally.total;
     return Container(
       height: 10,
       decoration: BoxDecoration(
@@ -354,10 +361,14 @@ class _TallyBar extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: Row(
+        // Sem isso o ColoredBox fica com altura 0 e a barra parece vazia.
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (tally.posso > 0) Expanded(flex: tally.posso, child: const ColoredBox(color: EmberColors.menta)),
           if (tally.talvez > 0) Expanded(flex: tally.talvez, child: const ColoredBox(color: EmberColors.lavanda)),
           if (tally.nao > 0) Expanded(flex: tally.nao, child: const ColoredBox(color: EmberColors.neblina)),
+          // Quem ainda não votou nesse horário: espaço vazio.
+          if (faltam > 0) Expanded(flex: faltam, child: const SizedBox.shrink()),
         ],
       ),
     );
@@ -371,6 +382,7 @@ class ClosedTicket extends StatelessWidget {
     required this.titulo,
     required this.quando,
     this.place,
+    this.onCalendar,
     this.onShare,
     this.shareLabel = 'Avisar galera',
   });
@@ -378,6 +390,7 @@ class ClosedTicket extends StatelessWidget {
   final String titulo;
   final DateTime quando;
   final Place? place;
+  final VoidCallback? onCalendar;
   final VoidCallback? onShare;
   final String shareLabel;
 
@@ -467,11 +480,28 @@ class ClosedTicket extends StatelessWidget {
             ),
           ),
         ),
-        if (onShare != null) ...[
+        if (onCalendar != null || onShare != null) ...[
           const SizedBox(height: 12),
           Row(
             children: [
-     
+              if (onCalendar != null)
+                Expanded(
+                  child: RetroButton(
+                    onPressed: onCalendar,
+                    height: 44,
+                    color: p.botaoSecundario,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.event_rounded, size: 18),
+                        const SizedBox(width: 6),
+                        Flexible(child: Text('Pôr na agenda', style: EmberText.body(13.5, weight: FontWeight.w800))),
+                      ],
+                    ),
+                  ),
+                ),
+              if (onCalendar != null && onShare != null) const SizedBox(width: 10),
               if (onShare != null)
                 Expanded(
                   child: RetroButton(

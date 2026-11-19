@@ -216,6 +216,10 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
     }
   }
 
+  Future<void> _addToCalendar(DateTime quando) async {
+    await launchUrl(Uri.parse(calendarLink(plan: plan, inicio: quando)), mode: LaunchMode.externalApplication);
+  }
+
   @override
   Widget build(BuildContext context) {
     final p = RetroPalette.of(context);
@@ -287,6 +291,7 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
           titulo: plan.titulo,
           quando: quando,
           place: place,
+          onCalendar: () => _addToCalendar(quando),
         ),
         const SizedBox(height: 16),
         if (place != null) ...[PlaceCard(place: place), const SizedBox(height: 18)],
@@ -378,6 +383,7 @@ class _GuestBodyState extends ConsumerState<_GuestBody> {
             showTally: showTally,
             isLeader: showTally && leader?.option.id == o.id && plan.status == PlanStatus.votando,
             eliminatedBy: eliminatedBy[o.id],
+            totalPessoas: members.length,
             onVote: canVote
                 ? (d) {
                     if (d == Disp.posso && possoLimitReached && myVotes[o.id] != Disp.posso) {
