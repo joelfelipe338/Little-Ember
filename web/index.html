@@ -59,6 +59,7 @@
       --lavanda: #8B7BFF;
       --tinta: #1B1A2E;
       --creme: #FFF8F1;
+      --destaque: #E8590C;
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -69,6 +70,7 @@
         --texto2: #B9B6C4;
         --contorno: #0B0A14;
         --grade: rgba(255, 255, 255, .05);
+        --destaque: #FFC43D;
       }
     }
 
@@ -131,7 +133,7 @@
       margin: 0; font: 800 clamp(24px, min(5vh, 8.6vw), 58px)/1.02 'Bricolage Grotesque', sans-serif;
       letter-spacing: -.03em; max-width: 14em;
     }
-    h1 mark { background: var(--sol); color: var(--tinta); padding: 0 .18em; border-radius: .2em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+    h1 mark { background: transparent; color: var(--destaque); }
     .sub { margin: 0; font-size: clamp(13.5px, min(2vh, 4vw), 19px); line-height: 1.4; color: var(--texto2); max-width: 34em; }
 
     .steps { display: flex; gap: 10px; width: 100%; max-width: 640px; }
@@ -175,22 +177,14 @@
     /* Cartão de exemplo (só em telas largas). */
     .demo { display: none; }
 
-    .ticker {
-      height: 38px; flex-shrink: 0; overflow: hidden; display: flex; align-items: center;
-      background: #1B1A2E; border: 3px solid var(--contorno); border-radius: 999px;
-    }
-    .ticker div { display: flex; white-space: nowrap; animation: marquee 26s linear infinite; }
-    .ticker span { padding: 0 22px; font: 700 12px 'Space Mono', monospace; letter-spacing: .06em; color: var(--sol); text-shadow: 0 0 8px rgba(255, 196, 61, .5); }
-    @keyframes marquee { to { transform: translateX(-50%); } }
 
     @media (prefers-reduced-motion: reduce) {
-      .logo-wrap img, .ticker div { animation: none; }
+      .logo-wrap img { animation: none; }
     }
 
     /* Telas baixas: corta o que é secundário pra caber sem rolar. */
     @media (max-height: 640px) {
       .steps small { display: none; }
-      .ticker { display: none; }
     }
     @media (max-height: 540px) {
       .steps { display: none; }
@@ -268,12 +262,6 @@
       </div>
     </section>
 
-    <div class="ticker" aria-hidden="true">
-      <div>
-        <span>A CHAMA QUE MANTÉM A AMIZADE ACESA • MANDA O LINK • A GALERA VOTA • O MELHOR HORÁRIO GANHA •</span>
-        <span>A CHAMA QUE MANTÉM A AMIZADE ACESA • MANDA O LINK • A GALERA VOTA • O MELHOR HORÁRIO GANHA •</span>
-      </div>
-    </div>
   </main>
 
   <script>
